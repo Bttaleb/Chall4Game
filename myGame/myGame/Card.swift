@@ -1,19 +1,57 @@
 import SpriteKit
 import SwiftUI
 
+enum Ability {
+    case pierce
+    case lifesteal
+    case doublestrike
+}
+
+enum Player {
+    case player1
+    case player2
+}
+
+struct GameState {
+    var player1HP: Int = 20
+    var player2HP: Int = 20
+    
+    mutating func dealDamage(to player: Player, amount: Int) {
+        switch player {
+        case .player1: player1HP = max(0, player1HP - amount)
+        case .player2: player2HP = max(0, player2HP - amount)
+        }
+    }
+    
+    func isGameOver() -> Bool {
+        return player1HP <= 0 || player2HP <= 0
+    }
+    
+}
+
 class Card: SKSpriteNode {
     // MARK: Properties
     let frontTexture: SKTexture
     let backTexture: SKTexture
-    @State var isFaceUp: Bool = true
+    var isFaceUp: Bool = true
+    
+    var attack: Int = 0
+    var defense: Int = 0
+    var abilities: Set<Ability> = []
     
     // MARK: Initialize
-    init(frontImage: String, backImage: String, isFaceUp: Bool = true) {
+    init(frontImage: String, backImage: String, attack: Int = 0, defense: Int = 0, abilities: Set<Ability>) {
+        
+        self.attack = attack
+        self.defense = defense
+        self.abilities = abilities
+        
         self.frontTexture = SKTexture(imageNamed: frontImage)
         self.backTexture = SKTexture(imageNamed: backImage)
         
+        
         //size comes from the texture itself (size isn't set in the code)
-        super.init(texture: frontTexture, color:.clear, size: frontTexture.size())
+        super.init(texture: frontTexture, color: .clear, size: frontTexture.size())
     }
     
     required init?(coder aDecoder: NSCoder) {
