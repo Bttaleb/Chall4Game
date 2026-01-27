@@ -33,13 +33,14 @@ class Card: SKSpriteNode {
     // MARK: Properties
     let frontTexture: SKTexture
     let backTexture: SKTexture
-    var isFaceUp: Bool = true
-    
     var attack: Int = 0
     var defense: Int = 0
     var abilities: Set<Ability> = []
     
-    // MARK: Initialize
+    var isFaceUp: Bool = true
+    var currentSlot: BattleSlot?
+    
+    // MARK: Initialize Card
     init(frontImage: String, backImage: String, attack: Int = 0, defense: Int = 0, abilities: Set<Ability>) {
         
         self.attack = attack
@@ -103,3 +104,6 @@ class Card: SKSpriteNode {
     
 }
 
+func ==(lhs: Card, rhs: Card) -> Bool {
+    return lhs == rhs
+}
