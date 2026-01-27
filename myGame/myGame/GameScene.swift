@@ -16,6 +16,8 @@ class GameScene: SKScene {
     //Store reference to battle slots
     var player1Slot: BattleSlot!
     var player2Slot: BattleSlot!
+    var player1Hand: Hand!
+    var player2Hand: Hand!
     
     let card: Card?
     let gameArea: CGRect
@@ -37,14 +39,26 @@ class GameScene: SKScene {
     
     override func didMove(to view: SKView) {
         let slotSize = CGSize(width: 120, height: 100)
+        
         player1Slot = BattleSlot(size: slotSize, owner: .player1)
-        player1Slot.position = CGPoint(x: gameArea.midX, y: gameArea.height * 0.25)
+        player1Slot.position = CGPoint(x: gameArea.midX, y: gameArea.height * 0.4)
         addChild(player1Slot)
         
         player2Slot = BattleSlot(size: slotSize, owner: .player2)
-        player2Slot.position = CGPoint(x: gameArea.midX, y: gameArea.height * 0.75)
+        player2Slot.position = CGPoint(x: gameArea.midX, y: gameArea.height * 0.6)
         addChild(player2Slot)
         
+        player1Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.15))
+        player2Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.85))
+        
+        let cardImages = ["3_of_hearts", "2_of_clubs", "ace_of_spades", "king_of_diamonds"]
+        for imageName in cardImages {
+            let card = Card(frontImage: imageName, backImage: "card_back", attack: 5, defense: 10, abilities: [])
+            
+            card.setScale(0.4)
+            addChild(card)
+            player1Hand.addCard(card)
+        }
         
         let card = Card(frontImage: "3_of_hearts", backImage: "2_of_clubs", abilities: Set<Ability>())
         cardNode = card
@@ -94,8 +108,14 @@ class GameScene: SKScene {
         if distance < 10 {
             card.flip()
         } else {
-            if let slot = battleSlotUnderCard(card) {
-                slot.isOccupied = true
+            if let oldSlot = card.currentSlot {
+                oldSlot.isOccupied = false
+                card.currentSlot = nil
+            }
+            if let newSlot = battleSlotUnderCard(card) {
+                card.position = newSlot.position
+                newSlot.isOccupied = true
+                card.currentSlot = newSlot
             } else {
                 card.position = startPos
             }
