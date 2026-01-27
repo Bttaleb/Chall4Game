@@ -11,8 +11,10 @@ import GameplayKit
 class GameScene: SKScene {
     
     private var cardNode: SKSpriteNode!
+    var currentPlayer: Player = .player1
     var selectedCard: Card?
     var dragStartPosition: CGPoint?
+    var dragStartZPosition: CGFloat?
     //Store reference to battle slots
     var player1Slot: BattleSlot!
     var player2Slot: BattleSlot!
@@ -80,6 +82,7 @@ class GameScene: SKScene {
             if let card = node as? Card {
                 selectedCard = card
                 dragStartPosition = card.position
+                dragStartZPosition = card.zPosition
                 card.zPosition = 100
                 
                 card.removeAction(forKey: "selectedSway")
@@ -112,16 +115,23 @@ class GameScene: SKScene {
                 oldSlot.isOccupied = false
                 card.currentSlot = nil
             }
+            
             if let newSlot = battleSlotUnderCard(card) {
+                player1Hand.removeCard(_card: card)
                 card.position = newSlot.position
                 newSlot.isOccupied = true
                 card.currentSlot = newSlot
             } else {
-                card.position = startPos
+                if !player1Hand.cards.contains(card) {
+                    player1Hand.addCard(card)
+                } else {
+                    card.position = startPos
+                }
             }
         }
         
-        card.zPosition = 0
+        card.zPosition = dragStartZPosition ?? 0
+        dragStartZPosition = nil
         card.addFloatyAnimation()
         selectedCard = nil
         dragStartPosition = nil
