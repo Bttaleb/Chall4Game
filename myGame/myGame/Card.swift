@@ -65,6 +65,8 @@ class Card: SKSpriteNode {
         
         guard action(forKey: "flip") == nil else { return }
         
+        let originalScaleX = self.xScale
+        
         let firstHalf = SKAction.scaleX(to: 0, duration: 0.15)
         firstHalf.timingMode = .easeIn
         
@@ -74,7 +76,7 @@ class Card: SKSpriteNode {
             self.texture = self.isFaceUp ? self.frontTexture : self.backTexture
         }
         
-        let secondHalf = SKAction.scaleX(to: 1, duration: 0.15)
+        let secondHalf = SKAction.scaleX(to: originalScaleX, duration: 0.15)
         secondHalf.timingMode = .easeOut
         
         let flipSequence = SKAction.sequence([firstHalf, swapTexture, secondHalf])
