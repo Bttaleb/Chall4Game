@@ -12,6 +12,8 @@ class GameScene: SKScene {
     
     private var cardNode: SKSpriteNode!
     
+    var turnManager: TurnManager!
+    
     var currentHand: Hand {
         return currentPlayer == .player1 ? player1Hand : player2Hand
     }
@@ -52,9 +54,13 @@ class GameScene: SKScene {
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+        
+        turnManager = TurnManager(cardsPerTurn: 4)
+        turnManager.delegate = self
     }
     
     override func didMove(to view: SKView) {
+        
         let slotSize = CGSize(width: 80, height: 120)
         let slotSpacing: CGFloat = 200
         let totalWidth = slotSpacing * 3
@@ -150,10 +156,13 @@ class GameScene: SKScene {
                 
                 if currentPlayer == .player1 {
                     player1PlacedCards.append(card)
+            
                 } else {
                     player2PlacedCards.append(card)
                 }
-                isTurnComplete()
+                
+                let filledCount = battleSlots.filter { $0.isOccupied } .count
+                turnManager.cardPlaced(totalFilledSlots: filledCount)
             }
         }
         
@@ -230,5 +239,22 @@ class GameScene: SKScene {
         //TODO: Position P1 and P2 cards
         //TODO: Animate Battle
         //TODO: Calculate damage
+    }
+
+}
+
+
+extension GameScene: TurnManagerDelegate {
+    func turnManager(_ manager: TurnManager, didSwitchTo player: Player) {
+        //Hide old player's hand
+    }
+    func turnManagerDidStartCombat(_ manager: TurnManager) {
+        //show all cards, start battle animation
+    }
+    func turnManager(_ manager: TurnManager, didEnterPhase phase: TurnPhase) {
+        //react to phase changes if needed
+    }
+    func turnManager(_ manager: TurnManager, didCompleteCombat results: CombatResult) {
+        
     }
 }
