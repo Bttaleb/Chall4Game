@@ -1,6 +1,7 @@
 import SpriteKit
 import SwiftUI
 
+
 enum Ability {
     case pierce
     case lifesteal
@@ -105,5 +106,5 @@ class Card: SKSpriteNode {
 }
 
 func ==(lhs: Card, rhs: Card) -> Bool {
-    return lhs == rhs
+    return lhs === rhs
 }
