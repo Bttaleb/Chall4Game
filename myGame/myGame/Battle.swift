@@ -26,6 +26,7 @@ class BattleSlot: SKShapeNode {
         self.strokeColor = owner == .player1 ? .blue : .red
         self.lineWidth = 3
         self.fillColor = .clear
+        self.name = "battleSlot"
     }
     
     required init?(coder: NSCoder) {

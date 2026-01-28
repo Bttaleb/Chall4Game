@@ -11,13 +11,30 @@ import GameplayKit
 class GameScene: SKScene {
     
     private var cardNode: SKSpriteNode!
+    
+    var currentHand: Hand {
+        return currentPlayer == .player1 ? player1Hand : player2Hand
+    }
+    
+    var currentPlayer: Player = .player1
+    
+    var player1PlacedCards: [Card] = []
+    var player2PlacedCards: [Card] = []
+    var currentPlacedCards: [Card] {
+        return currentPlayer == .player1 ? player1PlacedCards : player2PlacedCards
+    }
+    
     var selectedCard: Card?
     var dragStartPosition: CGPoint?
-    //Store reference to battle slots
-    var player1Slot: BattleSlot!
-    var player2Slot: BattleSlot!
+    var dragStartZPosition: CGFloat?
+    //Store reference to battle slots -> into arrays (multiple slots)
+    var battleSlots: [BattleSlot] = []
     var player1Hand: Hand!
     var player2Hand: Hand!
+    var gameTurns: Int = 0
+    var player1Turn: Int = 0
+    var player2Turn: Int = 0
+    
     
     let card: Card?
     let gameArea: CGRect
@@ -38,35 +55,44 @@ class GameScene: SKScene {
     }
     
     override func didMove(to view: SKView) {
-        let slotSize = CGSize(width: 120, height: 100)
+        let slotSize = CGSize(width: 80, height: 120)
+        let slotSpacing: CGFloat = 200
+        let totalWidth = slotSpacing * 3
+        let startX = gameArea.midX - totalWidth / 2
         
-        player1Slot = BattleSlot(size: slotSize, owner: .player1)
-        player1Slot.position = CGPoint(x: gameArea.midX, y: gameArea.height * 0.4)
-        addChild(player1Slot)
+        //make player1's slot
+        for i in 0..<4 {
+            let slot = BattleSlot(size: slotSize, owner: .player1)
+            slot.position = CGPoint(
+                x: startX + CGFloat(i) * slotSpacing,
+                y: gameArea.midY
+            )
+            addChild(slot)
+            battleSlots.append(slot)
+        }
         
-        player2Slot = BattleSlot(size: slotSize, owner: .player2)
-        player2Slot.position = CGPoint(x: gameArea.midX, y: gameArea.height * 0.6)
-        addChild(player2Slot)
         
         player1Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.15))
         player2Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.85))
         
-        let cardImages = ["3_of_hearts", "2_of_clubs", "ace_of_spades", "king_of_diamonds"]
-        for imageName in cardImages {
+        
+        let p1CardImages = ["3_of_hearts", "2_of_clubs", "ace_of_spades", "king_of_diamonds"]
+        for imageName in p1CardImages {
             let card = Card(frontImage: imageName, backImage: "card_back", attack: 5, defense: 10, abilities: [])
-            
             card.setScale(0.4)
             addChild(card)
             player1Hand.addCard(card)
         }
         
-        let card = Card(frontImage: "3_of_hearts", backImage: "2_of_clubs", abilities: Set<Ability>())
-        cardNode = card
-        cardNode.position = CGPoint(x: gameArea.midX, y: gameArea.midY)
-        cardNode.setScale(1)
-        addChild(cardNode)
-        
-        card.addFloatyAnimation()
+        let p2CardImages = ["3_of_hearts", "2_of_clubs", "ace_of_spades", "king_of_diamonds"]
+        for imageName in p2CardImages {
+            let card = Card(frontImage: imageName, backImage: "card_back", attack: 5, defense: 10, abilities: [])
+            card.setScale(0.4)
+            card.isHidden = true
+            addChild(card)
+            player2Hand.addCard(card)
+            
+        }
     }
     
     // "Began" fires when finger first touches screen, use nodes(at:) to find WHAT is under touch point
@@ -78,12 +104,14 @@ class GameScene: SKScene {
         
         for node in touchedNodes {
             if let card = node as? Card {
-                selectedCard = card
-                dragStartPosition = card.position
-                card.zPosition = 100
-                
-                card.removeAction(forKey: "selectedSway")
-                break
+                if currentHand.cards.contains(card) || card.currentSlot != nil {
+                    selectedCard = card
+                    dragStartPosition = card.position
+                    dragStartZPosition = card.zPosition
+                    card.zPosition = 100
+                    card.removeAction(forKey: "selectedSway")
+                    break
+                }
             }
         }
     }
@@ -95,6 +123,7 @@ class GameScene: SKScene {
         
         let location = touch.location(in: self)
         card.position = location
+        card.addFloatyAnimation()
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -112,30 +141,94 @@ class GameScene: SKScene {
                 oldSlot.isOccupied = false
                 card.currentSlot = nil
             }
+            
             if let newSlot = battleSlotUnderCard(card) {
+                player1Hand.removeCard(_card: card)
                 card.position = newSlot.position
                 newSlot.isOccupied = true
                 card.currentSlot = newSlot
-            } else {
-                card.position = startPos
+                
+                if currentPlayer == .player1 {
+                    player1PlacedCards.append(card)
+                } else {
+                    player2PlacedCards.append(card)
+                }
+                isTurnComplete()
             }
         }
         
-        card.zPosition = 0
-        card.addFloatyAnimation()
+        card.zPosition = dragStartZPosition ?? 0
+        dragStartZPosition = nil
         selectedCard = nil
         dragStartPosition = nil
+        card.removeAction(forKey: "selectedSway")
+
     }
     
+    //create a "battleSlot" for the card 
     func battleSlotUnderCard(_ card: Card) -> BattleSlot? {
-        if player1Slot.frame.intersects(card.frame) && !player1Slot.isOccupied {
-            return player1Slot
-        }
-        if player2Slot.frame.intersects(card.frame) && !player2Slot.isOccupied {
-            return player2Slot
+        for slot in battleSlots {
+            if slot.frame.intersects(card.frame) && !slot.isOccupied {
+                return slot
+            }
         }
         return nil
     }
     
-   
+    
+    //detect when turn is done
+    func isTurnComplete() {
+        
+        let filledCount = battleSlots.filter { $0.isOccupied } .count
+        if filledCount == 4 {
+            if currentPlayer == .player1 {
+                print("Player 1 finished")
+                player1Turn += 1
+                print(player1Turn)
+                switchTurn()
+            } else {
+                print("Player 2 finished")
+                player2Turn += 1
+                print(player2Turn)
+                startCombatPhase()
+                gameTurns += 1
+                print(gameTurns)
+            }
+        }
+    }
+    
+    func switchTurn() {
+        for card in currentHand.cards {
+            card.isHidden = true
+        }
+        
+        for card in currentHand.cards {
+            card.isHidden = true
+        }
+        
+        for slot in battleSlots {
+            slot.isOccupied = false
+        }
+        
+        currentPlayer = currentPlayer == .player1 ? .player2 : .player1
+        for card in currentHand.cards {
+            card.isHidden = false
+        }
+        print("Now its \(currentPlayer)")
+    }
+    
+    func startCombatPhase() {
+        print("Combat Phase")
+        
+        for card in player1PlacedCards {
+            card.isHidden = false
+        }
+        for card in player2PlacedCards {
+            card.isHidden = false
+        }
+        
+        //TODO: Position P1 and P2 cards
+        //TODO: Animate Battle
+        //TODO: Calculate damage
+    }
 }
