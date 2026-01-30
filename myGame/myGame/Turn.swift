@@ -50,7 +50,16 @@ class TurnManager {
     }
     
     func handleTurnComplete() {
-        
+        if currentPlayer == .player1 {
+            incrementTurnCount(for: .player1)
+            switchToPlayer(.player2)
+            print("Player 1's turn(s): \(player1TurnCount)")
+        } else {
+            incrementTurnCount(for: .player2)
+            print("Player 2's turn(s): \(player2TurnCount)")
+            print(roundNumber)
+            startCombat()
+        }
     }
     
     private func incrementTurnCount(for player: Player) {
@@ -83,5 +92,6 @@ class TurnManager {
         currentPlayer = .player1
         currentPhase = .placing
         delegate?.turnManager(self, didSwitchTo: .player1)
+        incrementRound()
     }
 }

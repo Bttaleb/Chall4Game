@@ -6,6 +6,33 @@ enum Ability {
     case pierce
     case lifesteal
     case doublestrike
+    case shield
+}
+
+enum PieceType {
+    case pawn, knight, bishop, rook, queen, king
+    
+    var cost: Int {
+        switch self {
+        case .pawn: return 2
+        case .knight: return 3
+        case .bishop: return 3
+        case .rook: return 5
+        case .queen: return 9
+        case .king: return 0 //TBD
+        }
+    }
+    
+    var baseStats: (attack: Int, defense: Int, abilities: Set<Ability>) {
+        switch self {
+        case .pawn: return (0, 0, [])
+        case .knight: return (0, 0, [.pierce])
+        case .bishop: return (0, 0, [.doublestrike])
+        case .rook: return (0, 0, [.shield])
+        case .queen: return (0, 0, [.lifesteal])
+        case .king: return (0, 0, [])
+        }
+    }
 }
 
 enum Player {
