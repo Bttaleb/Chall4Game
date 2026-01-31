@@ -12,6 +12,8 @@ class GameScene: SKScene {
     
     private var cardNode: SKSpriteNode!
     
+    var turnManager: TurnManager!
+    
     var currentHand: Hand {
         return currentPlayer == .player1 ? player1Hand : player2Hand
     }
@@ -52,9 +54,13 @@ class GameScene: SKScene {
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    
     }
     
     override func didMove(to view: SKView) {
+        turnManager = TurnManager(cardsPerTurn: 4)
+        turnManager.delegate = self
+        
         let slotSize = CGSize(width: 80, height: 120)
         let slotSpacing: CGFloat = 200
         let totalWidth = slotSpacing * 3
@@ -71,6 +77,15 @@ class GameScene: SKScene {
             battleSlots.append(slot)
         }
         
+        for i in 0..<4 {
+            let slot = BattleSlot(size: slotSize, owner: .player2)
+            slot.position = CGPoint(
+                x: startX + CGFloat(i) * slotSpacing,
+                y: gameArea.midY
+            )
+            addChild(slot)
+            battleSlots.append(slot)
+        }
         let p1Health = HealthBar(maxHP: 100)
         let p1HealthView = HealthbarView(healthBar: p1Health, width: size.width * 0.4)
         p1HealthView.position = CGPoint(x: 20, y: size.height * 0.15 + 40)
@@ -126,7 +141,7 @@ class GameScene: SKScene {
         }
     }
     
-    // "Moved" fires repeatedly as finger moves, update card's position to follow
+    // "Moved" fires repeatedly as finger moves, update card's position to follow -> Cards move when you pick them up
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first,
               let card = selectedCard else { return }
@@ -136,7 +151,9 @@ class GameScene: SKScene {
         card.addFloatyAnimation()
     }
     
+    
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
         guard let card = selectedCard,
               let startPos = dragStartPosition else { return }
         
@@ -144,26 +161,33 @@ class GameScene: SKScene {
         let dy = card.position.y - startPos.y
         let distance = sqrt(dx * dx + dy * dy)
         
+        //flip if a tap
         if distance < 10 {
             card.flip()
-        } else {
+        } else { //append
             if let oldSlot = card.currentSlot {
                 oldSlot.isOccupied = false
                 card.currentSlot = nil
             }
             
             if let newSlot = battleSlotUnderCard(card) {
-                player1Hand.removeCard(_card: card)
+                currentHand.removeCard(_card: card)
                 card.position = newSlot.position
                 newSlot.isOccupied = true
                 card.currentSlot = newSlot
                 
+                
                 if currentPlayer == .player1 {
                     player1PlacedCards.append(card)
+                    print("\(currentPlayer) placed: ATK \(card.attack), DEF \(card.defense)")
                 } else {
+                    currentPlayer = .player2
                     player2PlacedCards.append(card)
+                    print("\(currentPlayer) placed: ATK \(card.attack), DEF \(card.defense)")
                 }
-                isTurnComplete()
+                
+                let filledCount = battleSlots.filter { $0.isOccupied } .count
+                turnManager.cardPlaced(totalFilledSlots: filledCount)
             }
         }
         
@@ -186,46 +210,6 @@ class GameScene: SKScene {
     }
     
     
-    //detect when turn is done
-    func isTurnComplete() {
-        
-        let filledCount = battleSlots.filter { $0.isOccupied } .count
-        if filledCount == 4 {
-            if currentPlayer == .player1 {
-                print("Player 1 finished")
-                player1Turn += 1
-                print(player1Turn)
-                switchTurn()
-            } else {
-                print("Player 2 finished")
-                player2Turn += 1
-                print(player2Turn)
-                startCombatPhase()
-                gameTurns += 1
-                print(gameTurns)
-            }
-        }
-    }
-    
-    func switchTurn() {
-        for card in currentHand.cards {
-            card.isHidden = true
-        }
-        
-        for card in currentHand.cards {
-            card.isHidden = true
-        }
-        
-        for slot in battleSlots {
-            slot.isOccupied = false
-        }
-        
-        currentPlayer = currentPlayer == .player1 ? .player2 : .player1
-        for card in currentHand.cards {
-            card.isHidden = false
-        }
-        print("Now its \(currentPlayer)")
-    }
     
     func startCombatPhase() {
         print("Combat Phase")
@@ -240,5 +224,39 @@ class GameScene: SKScene {
         //TODO: Position P1 and P2 cards
         //TODO: Animate Battle
         //TODO: Calculate damage
+    }
+
+}
+
+
+extension GameScene: TurnManagerDelegate {
+    func turnManager(_ manager: TurnManager, didSwitchTo player: Player) {
+        //Hide old player's hand
+        let newHand = (player == .player1) ? player1Hand : player2Hand
+        let OldPlacedCards = (player == .player1) ? player2PlacedCards: player1PlacedCards
+        
+        
+        for card in OldPlacedCards {
+            card.isHidden = true
+        }
+        for card in newHand!.cards {
+            card.isHidden = false
+        }
+        for spot in battleSlots {
+            spot.isOccupied = false
+        }
+        currentPlayer = player
+        print("Now its \(currentPlayer)")
+
+        
+    }
+    func turnManagerDidStartCombat(_ manager: TurnManager) {
+        //show all cards, start battle animation
+    }
+    func turnManager(_ manager: TurnManager, didEnterPhase phase: TurnPhase) {
+        //react to phase changes if needed
+    }
+    func turnManager(_ manager: TurnManager, didCompleteCombat results: CombatResult) {
+        
     }
 }
