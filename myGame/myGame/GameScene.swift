@@ -86,6 +86,15 @@ class GameScene: SKScene {
             addChild(slot)
             battleSlots.append(slot)
         }
+        let p1Health = HealthBar(maxHP: 100)
+        let p1HealthView = HealthbarView(healthBar: p1Health, width: size.width * 0.4)
+        p1HealthView.position = CGPoint(x: 20, y: size.height * 0.15 + 40)
+        addChild(p1HealthView)
+        
+        let p2Health = HealthBar(maxHP: 100)
+        let p2HealthView = HealthbarView(healthBar: p2Health, width: size.width * 0.4)
+        p2HealthView.position = CGPoint(x: 20, y: size.height * 0.85 + 60)
+          addChild(p2HealthView)
         
         
         player1Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.15))
