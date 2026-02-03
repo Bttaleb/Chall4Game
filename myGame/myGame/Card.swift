@@ -1,6 +1,4 @@
 import SpriteKit
-import SwiftUI
-
 
 enum Ability {
     case pierce
@@ -9,12 +7,32 @@ enum Ability {
     case shield
 }
 
-enum PieceType {
+enum PieceType: CaseIterable {
     case pawn, knight, bishop, rook, queen, king
+    var name: String {
+        switch self {
+        case .pawn: return "Pawn"
+        case .knight: return "Knight"
+        case .bishop: return "Bishop"
+        case .rook: return "Rook"
+        case .queen: return "Queen"
+        case .king: return "King"
+        }
+    }
+    var imageName: String {
+        switch self {
+        case .pawn: return "white-pawn"
+        case .knight: return "white-knight"
+        case .bishop: return "white-bishop"
+        case .rook: return "white-rook"
+        case .queen: return "white-queen"
+        case .king: return "white-king"
+        }
+    }
     
     var cost: Int {
         switch self {
-        case .pawn: return 2
+        case .pawn: return 0
         case .knight: return 3
         case .bishop: return 3
         case .rook: return 5
@@ -25,12 +43,12 @@ enum PieceType {
     
     var baseStats: (attack: Int, defense: Int, abilities: Set<Ability>) {
         switch self {
-        case .pawn: return (0, 0, [])
-        case .knight: return (0, 0, [.pierce])
-        case .bishop: return (0, 0, [.doublestrike])
-        case .rook: return (0, 0, [.shield])
-        case .queen: return (0, 0, [.lifesteal])
-        case .king: return (0, 0, [])
+        case .pawn: return (5, 0, [])
+        case .knight: return (10, 5, [.pierce])
+        case .bishop: return (5, 10, [.doublestrike])
+        case .rook: return (0, 5, [.shield])
+        case .queen: return (25, 25, [.lifesteal, .pierce, .doublestrike])
+        case .king: return (25, 25, [.shield])
         }
     }
 }
@@ -64,23 +82,25 @@ class Card: SKSpriteNode {
     var attack: Int = 0
     var defense: Int = 0
     var abilities: Set<Ability> = []
-    
     var isFaceUp: Bool = true
     var currentSlot: BattleSlot?
+    let pieceType: PieceType
     
-    // MARK: Initialize Card
-    init(frontImage: String, backImage: String, attack: Int = 0, defense: Int = 0, abilities: Set<Ability>) {
-        
-        self.attack = attack
-        self.defense = defense
-        self.abilities = abilities
-        
-        self.frontTexture = SKTexture(imageNamed: frontImage)
+    //initialize let properties BEFORE super.init
+    init(data: CardData, backImage: String) {
         self.backTexture = SKTexture(imageNamed: backImage)
+        self.pieceType = data.pieceType
+        self.frontTexture = SKTexture(imageNamed: data.pieceType.imageName)
         
-        
-        //size comes from the texture itself (size isn't set in the code)
+        //call super.init -> SKSpriteNode sets itself up
         super.init(texture: frontTexture, color: .clear, size: frontTexture.size())
+        
+        //after super.init -> self is ready 0-> data pulled from cardData
+        self.attack = data.attack
+        self.defense = data.defense
+        self.abilities = data.abilities
+
+        
     }
     
     required init?(coder aDecoder: NSCoder) {

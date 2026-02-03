@@ -19,7 +19,10 @@ class GameScene: SKScene {
     }
     
     var currentPlayer: Player = .player1
-    
+    var player1Deck: Deck!
+    var player2Deck: Deck!
+    var player1PlayedPoints: Int = 0
+    var player2PlayedPoints: Int = 0
     var player1PlacedCards: [Card] = []
     var player2PlacedCards: [Card] = []
     var currentPlacedCards: [Card] {
@@ -57,6 +60,31 @@ class GameScene: SKScene {
     
     }
     
+    func dealHand(for player: Player) {
+        var deck = player == .player1 ? player1Deck : player2Deck
+        guard deck != nil else {return}
+        
+        let drawnCardData = deck!.draw(4)
+        
+        if player == .player1 {
+            player1Deck = deck
+        } else {
+            player2Deck = deck
+        }
+        
+        let hand = player == .player1 ? player1Hand : player2Hand
+        
+        for cardData in drawnCardData {
+            let card = Card(data: cardData, backImage: "card_back")
+            card.setScale(2)
+            if player == .player2 {
+                card.isHidden = true
+            }
+            addChild(card)
+            hand?.addCard(card)
+        }
+    }
+    
     override func didMove(to view: SKView) {
         turnManager = TurnManager(cardsPerTurn: 4)
         turnManager.delegate = self
@@ -77,15 +105,6 @@ class GameScene: SKScene {
             battleSlots.append(slot)
         }
         
-        for i in 0..<4 {
-            let slot = BattleSlot(size: slotSize, owner: .player2)
-            slot.position = CGPoint(
-                x: startX + CGFloat(i) * slotSpacing,
-                y: gameArea.midY
-            )
-            addChild(slot)
-            battleSlots.append(slot)
-        }
         let p1Health = HealthBar(maxHP: 100)
         let p1HealthView = HealthbarView(healthBar: p1Health, width: size.width * 0.4)
         p1HealthView.position = CGPoint(x: 20, y: size.height * 0.15 + 40)
@@ -96,28 +115,14 @@ class GameScene: SKScene {
         p2HealthView.position = CGPoint(x: 20, y: size.height * 0.85 + 60)
           addChild(p2HealthView)
         
-        
         player1Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.15))
         player2Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.85))
         
+        player1Deck = DeckBuilder.standardDeck()
+        player2Deck = DeckBuilder.standardDeck()
         
-        let p1CardImages = ["3_of_hearts", "2_of_clubs", "ace_of_spades", "king_of_diamonds"]
-        for imageName in p1CardImages {
-            let card = Card(frontImage: imageName, backImage: "card_back", attack: 5, defense: 10, abilities: [])
-            card.setScale(0.4)
-            addChild(card)
-            player1Hand.addCard(card)
-        }
-        
-        let p2CardImages = ["3_of_hearts", "2_of_clubs", "ace_of_spades", "king_of_diamonds"]
-        for imageName in p2CardImages {
-            let card = Card(frontImage: imageName, backImage: "card_back", attack: 5, defense: 10, abilities: [])
-            card.setScale(0.4)
-            card.isHidden = true
-            addChild(card)
-            player2Hand.addCard(card)
-            
-        }
+        dealHand(for: .player1)
+        dealHand(for: .player2)
     }
     
     // "Began" fires when finger first touches screen, use nodes(at:) to find WHAT is under touch point
@@ -171,6 +176,15 @@ class GameScene: SKScene {
             }
             
             if let newSlot = battleSlotUnderCard(card) {
+                guard canPlay(card) else {
+                    card.position = startPos
+                    card.zPosition = dragStartZPosition ?? 0
+                    dragStartZPosition = nil
+                    selectedCard = nil
+                    dragStartPosition = nil
+                    return
+                }
+                
                 currentHand.removeCard(_card: card)
                 card.position = newSlot.position
                 newSlot.isOccupied = true
@@ -179,11 +193,11 @@ class GameScene: SKScene {
                 
                 if currentPlayer == .player1 {
                     player1PlacedCards.append(card)
-                    print("\(currentPlayer) placed: ATK \(card.attack), DEF \(card.defense)")
+                    print("\(currentPlayer) placed: \(card.pieceType.name) w/ ATK \(card.attack), DEF \(card.defense), current played points: \(player1PlayedPoints)")
                 } else {
                     currentPlayer = .player2
                     player2PlacedCards.append(card)
-                    print("\(currentPlayer) placed: ATK \(card.attack), DEF \(card.defense)")
+                    print("\(currentPlayer) placed: \(card.pieceType.name) w/ ATK \(card.attack), DEF \(card.defense)")
                 }
                 
                 let filledCount = battleSlots.filter { $0.isOccupied } .count
@@ -209,7 +223,11 @@ class GameScene: SKScene {
         return nil
     }
     
-    
+    func canPlay(_ card: Card) -> Bool {
+        let cardCost = card.pieceType.cost
+        let currentPoints = currentPlayer == .player1 ? player1PlayedPoints : player2PlayedPoints
+        return currentPoints >= cardCost
+    }
     
     func startCombatPhase() {
         print("Combat Phase")
@@ -235,7 +253,6 @@ extension GameScene: TurnManagerDelegate {
         let newHand = (player == .player1) ? player1Hand : player2Hand
         let OldPlacedCards = (player == .player1) ? player2PlacedCards: player1PlacedCards
         
-        
         for card in OldPlacedCards {
             card.isHidden = true
         }
@@ -245,6 +262,10 @@ extension GameScene: TurnManagerDelegate {
         for spot in battleSlots {
             spot.isOccupied = false
         }
+        for slot in battleSlots {
+            slot.strokeColor = player == .player1 ? .blue : .red
+        }
+        
         currentPlayer = player
         print("Now its \(currentPlayer)")
 
@@ -252,6 +273,7 @@ extension GameScene: TurnManagerDelegate {
     }
     func turnManagerDidStartCombat(_ manager: TurnManager) {
         //show all cards, start battle animation
+        
     }
     func turnManager(_ manager: TurnManager, didEnterPhase phase: TurnPhase) {
         //react to phase changes if needed
