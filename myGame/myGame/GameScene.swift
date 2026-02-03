@@ -114,12 +114,12 @@ class GameScene: SKScene {
         }
         
 //health bar displays
-        p1Health = HealthBar(maxHP: 100)
+        p1Health = HealthBar(maxHP: 50)
         p1HBView = HealthbarView(healthBar: p1Health, width: size.width * 0.4)
         p1HBView.position = CGPoint(x: 20, y: size.height * 0.15 + 40)
         addChild(p1HBView)
 
-        p2Health = HealthBar(maxHP: 100)
+        p2Health = HealthBar(maxHP: 50)
         p2HBView = HealthbarView(healthBar: p2Health, width: size.width * 0.4)
         p2HBView.position = CGPoint(x: 20, y: size.height * 0.85 + 60)
         addChild(p2HBView)
