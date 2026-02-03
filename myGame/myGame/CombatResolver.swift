@@ -8,7 +8,7 @@
 import Foundation
 
 struct CombatResolver {
-    static func resolve(p1Cards: [Card], p2Cards: [Card], p1Health: HealthBar, p2Health: HealthBar) -> CombatResult {
+    static func resolve(p1Cards: [Card?], p2Cards: [Card?], p1Health: HealthBar, p2Health: HealthBar) -> CombatResult {
         let matchupCount = min(p1Cards.count, p2Cards.count)
         var p1ShieldActive = false
         var p2ShieldActive = false
@@ -17,8 +17,7 @@ struct CombatResolver {
         var totalP2DamageTaken = 0
         
         for i in 0..<matchupCount {
-            let p1Card = p1Cards[i]
-            let p2Card = p2Cards[i]
+            guard let p1Card = p1Cards[i], let p2Card = p2Cards[i] else { continue }
             
             //calc damage using shield state
             let dmgToP2 = calculateDamage(attacker: p1Card, defender: p2Card, hasActiveShield: p2ShieldActive)
@@ -26,6 +25,10 @@ struct CombatResolver {
             
             p2Health.reduceHP(dmgToP2)
             p1Health.reduceHP(dmgToP1)
+            
+            print("Slot \(i): \(p1Card.pieceType.name) vs \(p2Card.pieceType.name)")
+            print("  P1 deals \(dmgToP2) to P2 | P2 deals \(dmgToP1) to P1")
+            print("  P1 HP: \(p1Health.currentHP) | P2 HP: \(p2Health.currentHP)")
             
             applyLifesteal(card: p1Card, damage: dmgToP2, health: p1Health)
             applyLifesteal(card: p2Card, damage: dmgToP1, health: p2Health)
@@ -40,8 +43,8 @@ struct CombatResolver {
         return CombatResult(
             player1DamageTaken: totalP1DamageTaken,
             player2DamageTaken: totalP2DamageTaken,
-            player1CardsUsed: p1Cards,
-            player2CardsUsed: p2Cards
+            player1CardsUsed: p1Cards.compactMap { $0 },
+            player2CardsUsed: p2Cards.compactMap { $0 }
         )
     }
     
@@ -68,7 +71,9 @@ struct CombatResolver {
     //lifesteal helper
     static func applyLifesteal(card: Card, damage: Int, health: HealthBar) {
         if card.abilities.contains(.lifesteal) && damage > 0 {
-            health.heal(damage / 2)
+            let healAmount = card.attack / 2
+            health.heal(healAmount)
+            print("Lifesteal: healed \(healAmount)")
         }
     }
 }

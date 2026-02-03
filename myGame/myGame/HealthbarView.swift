@@ -9,11 +9,13 @@ import SpriteKit
 
 
 class HealthbarView: SKNode {
+    
     var healthBar: HealthBar
-
     private var backgroundBar: SKSpriteNode!
     private var fillBar: SKSpriteNode!
-
+    private var hpLabel: SKLabelNode!
+    
+    
     let barWidth: CGFloat
     let barHeight: CGFloat = 20
 
@@ -27,6 +29,13 @@ class HealthbarView: SKNode {
         fillBar = SKSpriteNode(color: .green, size: CGSize(width: barWidth, height: barHeight))
         fillBar.anchorPoint = CGPoint(x: 0, y: 0.5)
         addChild(fillBar)
+        
+        hpLabel = SKLabelNode(text: "100 / 100")
+        hpLabel.fontName = "Helvetica-Bold"
+        hpLabel.fontSize = 14
+        hpLabel.fontColor = .white
+        hpLabel.position = CGPoint(x: barWidth + 10, y: 0)
+        addChild(hpLabel)
     }
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -34,6 +43,7 @@ class HealthbarView: SKNode {
     func updateBar() {
         let percentage = healthBar.healthPercentage
         fillBar.size.width = barWidth * CGFloat(percentage)
+        hpLabel.text = "\(healthBar.currentHP) / \(healthBar.maxHP)"
     }
 }
 

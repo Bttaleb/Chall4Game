@@ -44,11 +44,11 @@ enum PieceType: CaseIterable {
     var baseStats: (attack: Int, defense: Int, abilities: Set<Ability>) {
         switch self {
         case .pawn: return (5, 0, [])
-        case .knight: return (10, 5, [.pierce])
-        case .bishop: return (5, 10, [.doublestrike])
-        case .rook: return (0, 5, [.shield])
-        case .queen: return (25, 25, [.lifesteal, .pierce, .doublestrike])
-        case .king: return (25, 25, [.shield])
+        case .knight: return (10, 0, [.pierce])
+        case .bishop: return (5, 0, [.doublestrike])
+        case .rook: return (0, 0, [.shield])
+        case .queen: return (25, 0, [.lifesteal])
+        case .king: return (25, 0, [.shield])
         }
     }
 }

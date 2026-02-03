@@ -27,9 +27,9 @@ class GameScene: SKScene {
     var player2Deck: Deck!
     var player1PlayedPoints: Int = 0
     var player2PlayedPoints: Int = 0
-    var player1PlacedCards: [Card] = []
-    var player2PlacedCards: [Card] = []
-    var currentPlacedCards: [Card] {
+    var player1PlacedCards: [Card?] = Array(repeating: nil, count: 4)
+    var player2PlacedCards: [Card?] = Array(repeating: nil, count: 4)
+    var currentPlacedCards: [Card?] {
         return currentPlayer == .player1 ? player1PlacedCards : player2PlacedCards
     }
     
@@ -213,16 +213,20 @@ class GameScene: SKScene {
                 
                 
                 if currentPlayer == .player1 {
-                    player1PlacedCards.append(card)
+                    if let slotIndex = battleSlots.firstIndex(of: newSlot) {
+                        player1PlacedCards[slotIndex] = card
+                    }
                     //adds points to p1 point tracker
                     let points = card.attack + card.defense
                     p1TrackerView.pointTracker.addPoints(points)
                     player1PlayedPoints += points
                     p1TrackerView.updateBar()
                     print("\(currentPlayer) placed: \(card.pieceType.name) w/ ATK \(card.attack), DEF \(card.defense), current played points: \(player1PlayedPoints)")
-                } else {
-                    currentPlayer = .player2
-                    player2PlacedCards.append(card)
+                }
+                if currentPlayer == .player2 {
+                    if let slotIndex = battleSlots.firstIndex(of: newSlot) {
+                        player2PlacedCards[slotIndex] = card
+                    }
                     //add points to p2 point tracker
                     let points = card.attack + card.defense
                     p2TrackerView.pointTracker.addPoints(points)
@@ -264,10 +268,10 @@ class GameScene: SKScene {
         print("Combat Phase")
         
         for card in player1PlacedCards {
-            card.isHidden = false
+            card?.isHidden = false
         }
         for card in player2PlacedCards {
-            card.isHidden = false
+            card?.isHidden = false
         }
         
         //TODO: Position P1 and P2 cards
@@ -276,11 +280,16 @@ class GameScene: SKScene {
     }
     
     func cleanUpAfterCombat() {
-        for card in player1PlacedCards + player2PlacedCards {
-            card.removeFromParent()
+    
+        for card in player1PlacedCards {
+            card?.removeFromParent()
         }
-        player1PlacedCards.removeAll()
-        player2PlacedCards.removeAll()
+        for card in player2PlacedCards {
+            card?.removeFromParent()
+        }
+        player1PlacedCards = Array(repeating: nil, count: 4)
+        player2PlacedCards = Array(repeating: nil, count: 4)
+        
         for slot in battleSlots {
             slot.isOccupied = false
         }
@@ -296,7 +305,7 @@ extension GameScene: TurnManagerDelegate {
         let OldPlacedCards = (player == .player1) ? player2PlacedCards: player1PlacedCards
         
         for card in OldPlacedCards {
-            card.isHidden = true
+            card?.isHidden = true
         }
         for card in newHand!.cards {
             card.isHidden = false
