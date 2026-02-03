@@ -88,7 +88,6 @@ class TurnManager {
     
     func combatResolved(results: CombatResult) {
         delegate?.turnManager(self, didCompleteCombat: results)
-        incrementRound()
         currentPlayer = .player1
         currentPhase = .placing
         delegate?.turnManager(self, didSwitchTo: .player1)

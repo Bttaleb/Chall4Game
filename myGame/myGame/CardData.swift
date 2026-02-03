@@ -17,7 +17,7 @@ struct CardData {
         self.name = pieceType.name
         self.attack = pieceType.baseStats.attack
         self.defense = pieceType.baseStats.defense
-        self.abilities = []
+        self.abilities = pieceType.baseStats.abilities
         self.pieceType = pieceType
     }
 }
