@@ -71,6 +71,7 @@ class GameScene: SKScene {
             battleSlots.append(slot)
         }
         
+        //health bar displays
         let p1Health = HealthBar(maxHP: 100)
         let p1HealthView = HealthbarView(healthBar: p1Health, width: size.width * 0.4)
         p1HealthView.position = CGPoint(x: 20, y: size.height * 0.15 + 40)
@@ -79,8 +80,18 @@ class GameScene: SKScene {
         let p2Health = HealthBar(maxHP: 100)
         let p2HealthView = HealthbarView(healthBar: p2Health, width: size.width * 0.4)
         p2HealthView.position = CGPoint(x: 20, y: size.height * 0.85 + 60)
-          addChild(p2HealthView)
+        addChild(p2HealthView)
         
+        //King and queen point tracker
+        let p1Tracker = PointTracker()
+        let p1TrackerView = PointTrackerView(pointTracker: p1Tracker, width: size.width * 0.2 )
+        p1TrackerView.position = CGPoint(x: 20, y: size.height * 0.15 + 70)
+        addChild(p1TrackerView)
+        
+        let p2Tracker = PointTracker()
+        let p2TrackerView = PointTrackerView(pointTracker: p1Tracker, width: size.width * 0.2)
+        p2TrackerView.position = CGPoint(x: 20, y: size.height * 0.85 + 90)
+        addChild(p2TrackerView)
         
         player1Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.15))
         player2Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.85))
