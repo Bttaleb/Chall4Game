@@ -12,12 +12,17 @@ class GameScene: SKScene {
     
     private var cardNode: SKSpriteNode!
     
+    var turnManager: TurnManager!
+    
     var currentHand: Hand {
         return currentPlayer == .player1 ? player1Hand : player2Hand
     }
     
     var currentPlayer: Player = .player1
-    
+    var player1Deck: Deck!
+    var player2Deck: Deck!
+    var player1PlayedPoints: Int = 0
+    var player2PlayedPoints: Int = 0
     var player1PlacedCards: [Card] = []
     var player2PlacedCards: [Card] = []
     var currentPlacedCards: [Card] {
@@ -34,6 +39,10 @@ class GameScene: SKScene {
     var gameTurns: Int = 0
     var player1Turn: Int = 0
     var player2Turn: Int = 0
+    
+    //store ref to point trackers
+    var p1TrackerView: PointTrackerView!
+    var p2TrackerView: PointTrackerView!
     
     
     let card: Card?
@@ -52,9 +61,38 @@ class GameScene: SKScene {
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    
+    }
+    
+    func dealHand(for player: Player) {
+        var deck = player == .player1 ? player1Deck : player2Deck
+        guard deck != nil else {return}
+        
+        let drawnCardData = deck!.draw(4)
+        
+        if player == .player1 {
+            player1Deck = deck
+        } else {
+            player2Deck = deck
+        }
+        
+        let hand = player == .player1 ? player1Hand : player2Hand
+        
+        for cardData in drawnCardData {
+            let card = Card(data: cardData, backImage: "card_back")
+            card.setScale(2)
+            if player == .player2 {
+                card.isHidden = true
+            }
+            addChild(card)
+            hand?.addCard(card)
+        }
     }
     
     override func didMove(to view: SKView) {
+        turnManager = TurnManager(cardsPerTurn: 4)
+        turnManager.delegate = self
+        
         let slotSize = CGSize(width: 80, height: 120)
         let slotSpacing: CGFloat = 200
         let totalWidth = slotSpacing * 3
@@ -84,36 +122,24 @@ class GameScene: SKScene {
         
         //King and queen point tracker
         let p1Tracker = PointTracker()
-        let p1TrackerView = PointTrackerView(pointTracker: p1Tracker, width: size.width * 0.2 )
+        p1TrackerView = PointTrackerView(pointTracker: p1Tracker, width: size.width * 0.2 )
         p1TrackerView.position = CGPoint(x: 20, y: size.height * 0.15 + 70)
         addChild(p1TrackerView)
         
         let p2Tracker = PointTracker()
-        let p2TrackerView = PointTrackerView(pointTracker: p1Tracker, width: size.width * 0.2)
+        p2TrackerView = PointTrackerView(pointTracker: p2Tracker, width: size.width * 0.2)
         p2TrackerView.position = CGPoint(x: 20, y: size.height * 0.85 + 90)
         addChild(p2TrackerView)
+        
         
         player1Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.15))
         player2Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.85))
         
+        player1Deck = DeckBuilder.standardDeck()
+        player2Deck = DeckBuilder.standardDeck()
         
-        let p1CardImages = ["3_of_hearts", "2_of_clubs", "ace_of_spades", "king_of_diamonds"]
-        for imageName in p1CardImages {
-            let card = Card(frontImage: imageName, backImage: "card_back", attack: 5, defense: 10, abilities: [])
-            card.setScale(0.4)
-            addChild(card)
-            player1Hand.addCard(card)
-        }
-        
-        let p2CardImages = ["3_of_hearts", "2_of_clubs", "ace_of_spades", "king_of_diamonds"]
-        for imageName in p2CardImages {
-            let card = Card(frontImage: imageName, backImage: "card_back", attack: 5, defense: 10, abilities: [])
-            card.setScale(0.4)
-            card.isHidden = true
-            addChild(card)
-            player2Hand.addCard(card)
-            
-        }
+        dealHand(for: .player1)
+        dealHand(for: .player2)
     }
     
     // "Began" fires when finger first touches screen, use nodes(at:) to find WHAT is under touch point
@@ -137,7 +163,7 @@ class GameScene: SKScene {
         }
     }
     
-    // "Moved" fires repeatedly as finger moves, update card's position to follow
+    // "Moved" fires repeatedly as finger moves, update card's position to follow -> Cards move when you pick them up
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first,
               let card = selectedCard else { return }
@@ -147,7 +173,9 @@ class GameScene: SKScene {
         card.addFloatyAnimation()
     }
     
+    
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
         guard let card = selectedCard,
               let startPos = dragStartPosition else { return }
         
@@ -155,26 +183,52 @@ class GameScene: SKScene {
         let dy = card.position.y - startPos.y
         let distance = sqrt(dx * dx + dy * dy)
         
+        //flip if a tap
         if distance < 10 {
             card.flip()
-        } else {
+        } else { //append
             if let oldSlot = card.currentSlot {
                 oldSlot.isOccupied = false
                 card.currentSlot = nil
             }
             
             if let newSlot = battleSlotUnderCard(card) {
-                player1Hand.removeCard(_card: card)
+                guard canPlay(card) else {
+                    card.position = startPos
+                    card.zPosition = dragStartZPosition ?? 0
+                    dragStartZPosition = nil
+                    selectedCard = nil
+                    dragStartPosition = nil
+                    return
+                }
+                
+                currentHand.removeCard(_card: card)
                 card.position = newSlot.position
                 newSlot.isOccupied = true
                 card.currentSlot = newSlot
                 
+                
                 if currentPlayer == .player1 {
                     player1PlacedCards.append(card)
+                    //adds points to p1 point tracker
+                    let points = card.attack + card.defense
+                    p1TrackerView.pointTracker.addPoints(points)
+                    player1PlayedPoints += points
+                    p1TrackerView.updateBar()
+                    print("\(currentPlayer) placed: \(card.pieceType.name) w/ ATK \(card.attack), DEF \(card.defense), current played points: \(player1PlayedPoints)")
                 } else {
+                    currentPlayer = .player2
                     player2PlacedCards.append(card)
+                    //add points to p2 point tracker
+                    let points = card.attack + card.defense
+                    p2TrackerView.pointTracker.addPoints(points)
+                    player2PlayedPoints += points
+                    p2TrackerView.updateBar()
+                    print("\(currentPlayer) placed: \(card.pieceType.name) w/ ATK \(card.attack), DEF \(card.defense)")
                 }
-                isTurnComplete()
+                
+                let filledCount = battleSlots.filter { $0.isOccupied } .count
+                turnManager.cardPlaced(totalFilledSlots: filledCount)
             }
         }
         
@@ -196,46 +250,10 @@ class GameScene: SKScene {
         return nil
     }
     
-    
-    //detect when turn is done
-    func isTurnComplete() {
-        
-        let filledCount = battleSlots.filter { $0.isOccupied } .count
-        if filledCount == 4 {
-            if currentPlayer == .player1 {
-                print("Player 1 finished")
-                player1Turn += 1
-                print(player1Turn)
-                switchTurn()
-            } else {
-                print("Player 2 finished")
-                player2Turn += 1
-                print(player2Turn)
-                startCombatPhase()
-                gameTurns += 1
-                print(gameTurns)
-            }
-        }
-    }
-    
-    func switchTurn() {
-        for card in currentHand.cards {
-            card.isHidden = true
-        }
-        
-        for card in currentHand.cards {
-            card.isHidden = true
-        }
-        
-        for slot in battleSlots {
-            slot.isOccupied = false
-        }
-        
-        currentPlayer = currentPlayer == .player1 ? .player2 : .player1
-        for card in currentHand.cards {
-            card.isHidden = false
-        }
-        print("Now its \(currentPlayer)")
+    func canPlay(_ card: Card) -> Bool {
+        let cardCost = card.pieceType.cost
+        let currentPoints = currentPlayer == .player1 ? player1PlayedPoints : player2PlayedPoints
+        return currentPoints >= cardCost
     }
     
     func startCombatPhase() {
@@ -251,5 +269,43 @@ class GameScene: SKScene {
         //TODO: Position P1 and P2 cards
         //TODO: Animate Battle
         //TODO: Calculate damage
+    }
+
+}
+
+
+extension GameScene: TurnManagerDelegate {
+    func turnManager(_ manager: TurnManager, didSwitchTo player: Player) {
+        //Hide old player's hand
+        let newHand = (player == .player1) ? player1Hand : player2Hand
+        let OldPlacedCards = (player == .player1) ? player2PlacedCards: player1PlacedCards
+        
+        for card in OldPlacedCards {
+            card.isHidden = true
+        }
+        for card in newHand!.cards {
+            card.isHidden = false
+        }
+        for spot in battleSlots {
+            spot.isOccupied = false
+        }
+        for slot in battleSlots {
+            slot.strokeColor = player == .player1 ? .blue : .red
+        }
+        
+        currentPlayer = player
+        print("Now its \(currentPlayer)")
+
+        
+    }
+    func turnManagerDidStartCombat(_ manager: TurnManager) {
+        //show all cards, start battle animation
+        
+    }
+    func turnManager(_ manager: TurnManager, didEnterPhase phase: TurnPhase) {
+        //react to phase changes if needed
+    }
+    func turnManager(_ manager: TurnManager, didCompleteCombat results: CombatResult) {
+        
     }
 }

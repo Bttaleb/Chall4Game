@@ -22,7 +22,7 @@ class PointTrackerView: SKNode {
         self.pointTracker = pointTracker
         self.barWidth = width
         super.init()
-        backgroundBar = SKSpriteNode(color: .darkGray, size: CGSize(width: barWidth, height: barHeight))
+        backgroundBar = SKSpriteNode(color: .clear, size: CGSize(width: barWidth, height: barHeight))
         backgroundBar.anchorPoint = CGPoint(x: 0, y: 0.5)
         addChild(backgroundBar)
         fillBar = SKSpriteNode(color:.yellow, size: CGSize (width: 0, height: barHeight))
@@ -40,7 +40,11 @@ class PointTrackerView: SKNode {
     }
     func updateBar() {
         let percentage = pointTracker.fillPercentage
-        fillBar.size.width = barWidth * CGFloat(percentage)
+        let newWidth = barWidth * CGFloat(percentage)
+        fillBar.run(SKAction.resize(toWidth: newWidth, duration: 0.01))
+        
+        //fillBar.size.width = barWidth * CGFloat(percentage)
+
         
     }
 }
