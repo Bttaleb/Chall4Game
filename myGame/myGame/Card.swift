@@ -33,10 +33,10 @@ enum PieceType: CaseIterable {
     var cost: Int {
         switch self {
         case .pawn: return 0
-        case .knight: return 3
-        case .bishop: return 3
-        case .rook: return 5
-        case .queen: return 9
+        case .knight: return 0
+        case .bishop: return 0
+        case .rook: return 0
+        case .queen: return 0
         case .king: return 0 //TBD
         }
     }

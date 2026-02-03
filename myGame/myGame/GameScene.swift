@@ -44,6 +44,10 @@ class GameScene: SKScene {
     var player1Turn: Int = 0
     var player2Turn: Int = 0
     
+    //store ref to point trackers
+    var p1TrackerView: PointTrackerView!
+    var p2TrackerView: PointTrackerView!
+    
     
     let card: Card?
     let gameArea: CGRect
@@ -109,15 +113,27 @@ class GameScene: SKScene {
             battleSlots.append(slot)
         }
         
+//health bar displays
         p1Health = HealthBar(maxHP: 100)
         p1HBView = HealthbarView(healthBar: p1Health, width: size.width * 0.4)
         p1HBView.position = CGPoint(x: 20, y: size.height * 0.15 + 40)
         addChild(p1HBView)
-        
+
         p2Health = HealthBar(maxHP: 100)
         p2HBView = HealthbarView(healthBar: p2Health, width: size.width * 0.4)
         p2HBView.position = CGPoint(x: 20, y: size.height * 0.85 + 60)
         addChild(p2HBView)
+
+        //King and queen point tracker
+        let p1Tracker = PointTracker()
+        p1TrackerView = PointTrackerView(pointTracker: p1Tracker, width: size.width * 0.2)
+        p1TrackerView.position = CGPoint(x: 20, y: size.height * 0.15 + 70)
+        addChild(p1TrackerView)
+
+        let p2Tracker = PointTracker()
+        p2TrackerView = PointTrackerView(pointTracker: p2Tracker, width: size.width * 0.2)
+        p2TrackerView.position = CGPoint(x: 20, y: size.height * 0.85 + 90)
+        addChild(p2TrackerView)
         
         player1Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.15))
         player2Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.85))
@@ -198,10 +214,20 @@ class GameScene: SKScene {
                 
                 if currentPlayer == .player1 {
                     player1PlacedCards.append(card)
+                    //adds points to p1 point tracker
+                    let points = card.attack + card.defense
+                    p1TrackerView.pointTracker.addPoints(points)
+                    player1PlayedPoints += points
+                    p1TrackerView.updateBar()
                     print("\(currentPlayer) placed: \(card.pieceType.name) w/ ATK \(card.attack), DEF \(card.defense), current played points: \(player1PlayedPoints)")
                 } else {
                     currentPlayer = .player2
                     player2PlacedCards.append(card)
+                    //add points to p2 point tracker
+                    let points = card.attack + card.defense
+                    p2TrackerView.pointTracker.addPoints(points)
+                    player2PlayedPoints += points
+                    p2TrackerView.updateBar()
                     print("\(currentPlayer) placed: \(card.pieceType.name) w/ ATK \(card.attack), DEF \(card.defense)")
                 }
                 

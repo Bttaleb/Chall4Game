@@ -7,7 +7,7 @@
 
 import Foundation
 
-class KingQueenBar {
+class PointTracker {
     var currentPoints: Int
     let maxPoints: Int
 
