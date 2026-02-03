@@ -29,6 +29,21 @@ struct Deck {
 
 struct DeckBuilder {
     static func standardDeck() -> Deck {
-        Deck(pieces: [.pawn, .knight, .bishop, .rook, .queen, .king])
+        let pieces: [(PieceType, Int)] = [
+            (.pawn, 8),
+            (.knight, 2),
+            (.bishop, 2),
+            (.rook, 2),
+            (.queen, 1),
+            (.king, 1)
+        ]
+        
+        var allPieces: [PieceType] = []
+        
+        for (piece, count) in pieces {
+            Array(repeating: piece, count: count).forEach { allPieces.append($0) }
+        }
+        
+        return Deck(pieces: allPieces)
     }
 }

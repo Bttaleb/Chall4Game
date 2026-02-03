@@ -68,7 +68,7 @@ class GameScene: SKScene {
         var deck = player == .player1 ? player1Deck : player2Deck
         guard deck != nil else {return}
         
-        let drawnCardData = deck!.draw(4)
+        let drawnCardData = deck!.draw(deck!.remaining)
         
         if player == .player1 {
             player1Deck = deck
