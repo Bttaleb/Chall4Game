@@ -17,6 +17,10 @@ class GameScene: SKScene {
     var currentHand: Hand {
         return currentPlayer == .player1 ? player1Hand : player2Hand
     }
+    var p1Health: HealthBar!
+    var p2Health: HealthBar!
+    var p1HBView: HealthbarView!
+    var p2HBView: HealthbarView!
     
     var currentPlayer: Player = .player1
     var player1Deck: Deck!
@@ -109,28 +113,27 @@ class GameScene: SKScene {
             battleSlots.append(slot)
         }
         
-        //health bar displays
-        let p1Health = HealthBar(maxHP: 100)
-        let p1HealthView = HealthbarView(healthBar: p1Health, width: size.width * 0.4)
-        p1HealthView.position = CGPoint(x: 20, y: size.height * 0.15 + 40)
-        addChild(p1HealthView)
-        
-        let p2Health = HealthBar(maxHP: 100)
-        let p2HealthView = HealthbarView(healthBar: p2Health, width: size.width * 0.4)
-        p2HealthView.position = CGPoint(x: 20, y: size.height * 0.85 + 60)
-        addChild(p2HealthView)
-        
+//health bar displays
+        p1Health = HealthBar(maxHP: 100)
+        p1HBView = HealthbarView(healthBar: p1Health, width: size.width * 0.4)
+        p1HBView.position = CGPoint(x: 20, y: size.height * 0.15 + 40)
+        addChild(p1HBView)
+
+        p2Health = HealthBar(maxHP: 100)
+        p2HBView = HealthbarView(healthBar: p2Health, width: size.width * 0.4)
+        p2HBView.position = CGPoint(x: 20, y: size.height * 0.85 + 60)
+        addChild(p2HBView)
+
         //King and queen point tracker
         let p1Tracker = PointTracker()
-        p1TrackerView = PointTrackerView(pointTracker: p1Tracker, width: size.width * 0.2 )
+        p1TrackerView = PointTrackerView(pointTracker: p1Tracker, width: size.width * 0.2)
         p1TrackerView.position = CGPoint(x: 20, y: size.height * 0.15 + 70)
         addChild(p1TrackerView)
-        
+
         let p2Tracker = PointTracker()
         p2TrackerView = PointTrackerView(pointTracker: p2Tracker, width: size.width * 0.2)
         p2TrackerView.position = CGPoint(x: 20, y: size.height * 0.85 + 90)
         addChild(p2TrackerView)
-        
         
         player1Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.15))
         player2Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.85))
@@ -191,6 +194,7 @@ class GameScene: SKScene {
                 oldSlot.isOccupied = false
                 card.currentSlot = nil
             }
+            
             
             if let newSlot = battleSlotUnderCard(card) {
                 guard canPlay(card) else {
@@ -270,6 +274,17 @@ class GameScene: SKScene {
         //TODO: Animate Battle
         //TODO: Calculate damage
     }
+    
+    func cleanUpAfterCombat() {
+        for card in player1PlacedCards + player2PlacedCards {
+            card.removeFromParent()
+        }
+        player1PlacedCards.removeAll()
+        player2PlacedCards.removeAll()
+        for slot in battleSlots {
+            slot.isOccupied = false
+        }
+    }
 
 }
 
@@ -300,12 +315,26 @@ extension GameScene: TurnManagerDelegate {
     }
     func turnManagerDidStartCombat(_ manager: TurnManager) {
         //show all cards, start battle animation
+        startCombatPhase()
+        let combatResult = CombatResolver.resolve(p1Cards: player1PlacedCards, p2Cards: player2PlacedCards, p1Health: p1Health, p2Health: p2Health)
+        p1HBView.updateBar()
+        p2HBView.updateBar()
         
+        if p1Health.isDead {
+            print("Player 1 has been defeated, Player 2 wins")
+        }
+        if p2Health.isDead {
+            print("Player 2 has been defeated, Player 1 wins")
+        }
+        
+        cleanUpAfterCombat()
+        turnManager.combatResolved(results: combatResult)
     }
     func turnManager(_ manager: TurnManager, didEnterPhase phase: TurnPhase) {
         //react to phase changes if needed
     }
     func turnManager(_ manager: TurnManager, didCompleteCombat results: CombatResult) {
-        
+        dealHand(for: .player1)
+        dealHand(for: .player2)
     }
 }
