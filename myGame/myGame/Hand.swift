@@ -4,7 +4,11 @@ import Foundation
 class Hand {
     var cards: [Card] = []
     var position: CGPoint
-    var cardOffset: CGFloat = 30
+    var columnSpacing: CGFloat = 240
+    var cardOverlap: CGFloat = 80
+    
+    // piece type ordering for columns, left to right
+    private let columnOrder: [PieceType] = [.pawn, .knight, .bishop, .rook, .queen, .king]
     
     init(position: CGPoint) {
         self.position = position
@@ -23,11 +27,30 @@ class Hand {
     }
     
     func layoutCards() {
-        for (index, card) in cards.enumerated() {
-            let yOffset = CGFloat(index) * cardOffset
-            card.position = CGPoint(x: position.x, y: position.y - yOffset)
+        // group cards by piece type
+        var groups: [PieceType: [Card]] = [:]
+        for card in cards {
+            groups[card.pieceType, default: []].append(card)
+        }
+        
+        // only layout columns that have cards
+        let activeColumns = columnOrder.filter { groups[$0] != nil }
+        let totalColumns = CGFloat(activeColumns.count)
+        let totalWidth = (totalColumns - 1) * columnSpacing
+        let startX = position.x - totalWidth / 2
+        
+        var zCounter: CGFloat = 0
+        
+        for (colIndex, pieceType) in activeColumns.enumerated() {
+            guard let columnCards = groups[pieceType] else { continue }
+            let x = startX + CGFloat(colIndex) * columnSpacing
             
-            card.zPosition = CGFloat(index)
+            for (rowIndex, card) in columnCards.enumerated() {
+                let yOffset = CGFloat(rowIndex) * cardOverlap
+                card.position = CGPoint(x: x, y: position.y - yOffset)
+                card.zPosition = zCounter
+                zCounter += 1
+            }
         }
     }
 }

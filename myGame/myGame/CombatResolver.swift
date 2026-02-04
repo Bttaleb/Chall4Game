@@ -10,8 +10,6 @@ import Foundation
 struct CombatResolver {
     static func resolve(p1Cards: [Card?], p2Cards: [Card?], p1Health: HealthBar, p2Health: HealthBar) -> CombatResult {
         let matchupCount = min(p1Cards.count, p2Cards.count)
-        var p1ShieldActive = false
-        var p2ShieldActive = false
         
         var totalP1DamageTaken = 0
         var totalP2DamageTaken = 0
@@ -19,23 +17,33 @@ struct CombatResolver {
         for i in 0..<matchupCount {
             guard let p1Card = p1Cards[i], let p2Card = p2Cards[i] else { continue }
             
-            //calc damage using shield state
-            let dmgToP2 = calculateDamage(attacker: p1Card, defender: p2Card, hasActiveShield: p2ShieldActive)
-            let dmgToP1 = calculateDamage(attacker: p2Card, defender: p1Card, hasActiveShield: p1ShieldActive)
+            // shield protects the card in the same slot
+            let p1ShieldActive = p1Card.abilities.contains(.shield)
+            let p2ShieldActive = p2Card.abilities.contains(.shield)
+            
+            //calc damage — p1's shield reduces p2's attack on this slot, and vice versa
+            let p1Breakdown = calculateDamage(attacker: p1Card, defender: p2Card, hasActiveShield: p2ShieldActive)
+            let p2Breakdown = calculateDamage(attacker: p2Card, defender: p1Card, hasActiveShield: p1ShieldActive)
+            
+            let dmgToP2 = p1Breakdown.finalDamage
+            let dmgToP1 = p2Breakdown.finalDamage
             
             p2Health.reduceHP(dmgToP2)
             p1Health.reduceHP(dmgToP1)
             
             print("Slot \(i): \(p1Card.pieceType.name) vs \(p2Card.pieceType.name)")
-            print("  P1 deals \(dmgToP2) to P2 | P2 deals \(dmgToP1) to P1")
-            print("  P1 HP: \(p1Health.currentHP) | P2 HP: \(p2Health.currentHP)")
-            
+            if p2Breakdown.wasShielded {
+                print("  ⛨ P1's \(p1Card.pieceType.name) shields: P2's attack reduced \(p2Breakdown.preShieldDamage) → \(dmgToP1)")
+            }
+            if p1Breakdown.wasShielded {
+                print("  ⛨ P2's \(p2Card.pieceType.name) shields: P1's attack reduced \(p1Breakdown.preShieldDamage) → \(dmgToP2)")
+            }
             applyLifesteal(card: p1Card, damage: dmgToP2, health: p1Health)
             applyLifesteal(card: p2Card, damage: dmgToP1, health: p2Health)
             
-            p1ShieldActive = p1Card.abilities.contains(.shield)
-            p2ShieldActive = p2Card.abilities.contains(.shield)
-            
+            print("  P1 deals \(dmgToP2) to P2 | P2 deals \(dmgToP1) to P1")
+            print("  P1 HP: \(p1Health.currentHP) | P2 HP: \(p2Health.currentHP)")
+        
             totalP1DamageTaken += dmgToP1
             totalP2DamageTaken += dmgToP2
             
@@ -48,9 +56,15 @@ struct CombatResolver {
         )
     }
     
-    private static func calculateDamage(attacker: Card, defender: Card, hasActiveShield: Bool) -> Int {
+    struct DamageBreakdown {
+        let finalDamage: Int
+        let baseDamage: Int
+        let wasShielded: Bool
+        let preShieldDamage: Int
+    }
     
-        let defenderHasShield = hasActiveShield
+    private static func calculateDamage(attacker: Card, defender: Card, hasActiveShield: Bool) -> DamageBreakdown {
+    
         var damage = max(0, attacker.attack - defender.defense)
         
         if attacker.abilities.contains(.pierce) {
@@ -60,12 +74,19 @@ struct CombatResolver {
         if attacker.abilities.contains(.doublestrike) {
             damage = damage * 2
         }
+        
+        let preShieldDamage = damage
                 
-        if defenderHasShield == true {
+        if hasActiveShield {
             damage = damage / 2
         }
         
-        return damage
+        return DamageBreakdown(
+            finalDamage: damage,
+            baseDamage: attacker.attack,
+            wasShielded: hasActiveShield,
+            preShieldDamage: preShieldDamage
+        )
     }
     
     //lifesteal helper

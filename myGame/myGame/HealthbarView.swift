@@ -17,7 +17,7 @@ class HealthbarView: SKNode {
     
     
     let barWidth: CGFloat
-    let barHeight: CGFloat = 20
+    let barHeight: CGFloat = 40
 
     init(healthBar: HealthBar, width: CGFloat) {
         self.barWidth = width
@@ -30,11 +30,11 @@ class HealthbarView: SKNode {
         fillBar.anchorPoint = CGPoint(x: 0, y: 0.5)
         addChild(fillBar)
         
-        hpLabel = SKLabelNode(text: "100 / 100")
+        hpLabel = SKLabelNode(text: "50 / 50")
         hpLabel.fontName = "Helvetica-Bold"
         hpLabel.fontSize = 14
         hpLabel.fontColor = .white
-        hpLabel.position = CGPoint(x: barWidth + 10, y: 0)
+        hpLabel.position = CGPoint(x: barWidth + 32, y: 0)
         addChild(hpLabel)
     }
     required init?(coder aDecoder: NSCoder) {

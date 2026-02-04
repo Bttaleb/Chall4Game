@@ -116,23 +116,23 @@ class GameScene: SKScene {
 //health bar displays
         p1Health = HealthBar(maxHP: 50)
         p1HBView = HealthbarView(healthBar: p1Health, width: size.width * 0.4)
-        p1HBView.position = CGPoint(x: 20, y: size.height * 0.15 + 40)
+        p1HBView.position = CGPoint(x: 20, y: size.height * 0.15 + 140)
         addChild(p1HBView)
 
         p2Health = HealthBar(maxHP: 50)
         p2HBView = HealthbarView(healthBar: p2Health, width: size.width * 0.4)
-        p2HBView.position = CGPoint(x: 20, y: size.height * 0.85 + 60)
+        p2HBView.position = CGPoint(x: 20, y: size.height * 0.85 + 120)
         addChild(p2HBView)
 
         //King and queen point tracker
         let p1Tracker = PointTracker()
         p1TrackerView = PointTrackerView(pointTracker: p1Tracker, width: size.width * 0.2)
-        p1TrackerView.position = CGPoint(x: 20, y: size.height * 0.15 + 70)
+        p1TrackerView.position = CGPoint(x: 20, y: size.height * 0.15 + 180)
         addChild(p1TrackerView)
 
         let p2Tracker = PointTracker()
         p2TrackerView = PointTrackerView(pointTracker: p2Tracker, width: size.width * 0.2)
-        p2TrackerView.position = CGPoint(x: 20, y: size.height * 0.85 + 90)
+        p2TrackerView.position = CGPoint(x: 20, y: size.height * 0.85 + 160)
         addChild(p2TrackerView)
         
         player1Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.15))
@@ -149,7 +149,6 @@ class GameScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
-        
         let touchedNodes = nodes(at: location)
         
         for node in touchedNodes {
@@ -180,8 +179,9 @@ class GameScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         
         guard let card = selectedCard,
-              let startPos = dragStartPosition else { return }
-        
+        let startPos = dragStartPosition else { return }
+        let isNearHand = abs(card.position.y - currentHand.position.y) < 150
+
         let dx = card.position.x - startPos.x
         let dy = card.position.y - startPos.y
         let distance = sqrt(dx * dx + dy * dy)
@@ -190,13 +190,11 @@ class GameScene: SKScene {
         if distance < 10 {
             card.flip()
         } else { //append
-            if let oldSlot = card.currentSlot {
-                oldSlot.isOccupied = false
-                card.currentSlot = nil
-            }
-            
-            
             if let newSlot = battleSlotUnderCard(card) {
+                if let oldSlot = card.currentSlot {
+                    oldSlot.isOccupied = false
+                    card.currentSlot = nil
+                }
                 guard canPlay(card) else {
                     card.position = startPos
                     card.zPosition = dragStartZPosition ?? 0
@@ -210,7 +208,6 @@ class GameScene: SKScene {
                 card.position = newSlot.position
                 newSlot.isOccupied = true
                 card.currentSlot = newSlot
-                
                 
                 if currentPlayer == .player1 {
                     if let slotIndex = battleSlots.firstIndex(of: newSlot) {
@@ -238,6 +235,12 @@ class GameScene: SKScene {
                 let filledCount = battleSlots.filter { $0.isOccupied } .count
                 turnManager.cardPlaced(totalFilledSlots: filledCount)
             }
+             else if card.currentSlot != nil && abs(card.position.y - currentHand.position.y) < 150 {
+                removeCardFromSlot(card)
+                currentHand.addCard(card)
+            } else {
+                card.position = startPos
+            }
         }
         
         card.zPosition = dragStartZPosition ?? 0
@@ -263,6 +266,20 @@ class GameScene: SKScene {
         let currentPoints = currentPlayer == .player1 ? player1PlayedPoints : player2PlayedPoints
         return currentPoints >= cardCost
     }
+    
+    func removeCardFromSlot(_ card: Card) {
+        guard let oldSlot = card.currentSlot else {return}
+        if let slotIndex = battleSlots.firstIndex(of: oldSlot) {
+            if currentPlayer == .player1 {
+                player1PlacedCards[slotIndex] = nil
+            } else if currentPlayer == .player2 {
+                player2PlacedCards[slotIndex] = nil
+            }
+        }
+            oldSlot.isOccupied = false
+            card.currentSlot = nil
+        
+        }
     
     func startCombatPhase() {
         print("Combat Phase")
@@ -302,8 +319,12 @@ extension GameScene: TurnManagerDelegate {
     func turnManager(_ manager: TurnManager, didSwitchTo player: Player) {
         //Hide old player's hand
         let newHand = (player == .player1) ? player1Hand : player2Hand
+        let oldHand = (player == .player1) ? player2Hand: player1Hand
         let OldPlacedCards = (player == .player1) ? player2PlacedCards: player1PlacedCards
         
+        for hand in oldHand!.cards {
+            hand.isHidden = true
+        }
         for card in OldPlacedCards {
             card?.isHidden = true
         }
