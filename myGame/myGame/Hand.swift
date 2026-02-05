@@ -4,8 +4,8 @@ import Foundation
 class Hand {
     var cards: [Card] = []
     var position: CGPoint
-    var columnSpacing: CGFloat = 240
-    var cardOverlap: CGFloat = 80
+    var columnSpacing: CGFloat = 120
+    var cardOverlap: CGFloat = 40
     
     // piece type ordering for columns, left to right
     private let columnOrder: [PieceType] = [.pawn, .knight, .bishop, .rook, .queen, .king]

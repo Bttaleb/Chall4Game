@@ -12,7 +12,18 @@ enum TurnPhase {
     case combat
 }
 
+struct SlotResult {
+    var slotIndex: Int
+    var p1Card: Card
+    var p2Card: Card
+    var damageToP1: Int
+    var damageToP2: Int
+    var p1Healed: Int
+    var p2Healed: Int
+}
+
 struct CombatResult {
+    let slotResults: [SlotResult]
     let player1DamageTaken: Int
     let player2DamageTaken: Int
     let player1CardsUsed: [Card]

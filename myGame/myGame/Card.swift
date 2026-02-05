@@ -7,26 +7,29 @@ enum Ability {
     case shield
 }
 
+// Card Identity
 enum PieceType: CaseIterable {
     case pawn, knight, bishop, rook, queen, king
     var name: String {
         switch self {
-        case .pawn: return "Pawn"
-        case .knight: return "Knight"
-        case .bishop: return "Bishop"
-        case .rook: return "Rook"
-        case .queen: return "Queen"
-        case .king: return "King"
+        case .pawn: return "pawn"
+        case .knight: return "knight"
+        case .bishop: return "bishop"
+        case .rook: return "rook"
+        case .queen: return "queen"
+        case .king: return "king"
         }
     }
+    
+    // Extract piece from png file
     var imageName: String {
         switch self {
-        case .pawn: return "white-pawn"
-        case .knight: return "white-knight"
-        case .bishop: return "white-bishop"
-        case .rook: return "white-rook"
-        case .queen: return "white-queen"
-        case .king: return "white-king"
+        case .pawn: return "pawn-piece"
+        case .knight: return "knight-piece"
+        case .bishop: return "bishop-piece"
+        case .rook: return "rook-piece"
+        case .queen: return "queen-piece"
+        case .king: return "king-piece"
         }
     }
     
@@ -45,11 +48,26 @@ enum PieceType: CaseIterable {
         switch self {
         case .pawn: return (5, 0, [])
         case .knight: return (10, 0, [.pierce])
-        case .bishop: return (5, 0, [.doublestrike])
-        case .rook: return (0, 0, [.shield])
+        case .bishop: return (0, 0, [.shield]) //25%
+        case .rook: return (0, 0, [.shield]) //50%
         case .queen: return (25, 0, [.lifesteal])
-        case .king: return (25, 0, [.shield])
+        case .king: return (0, 0, [.shield]) //75%
         }
+    }
+        
+}
+
+// CardLayer - Rendering Data (does NOT know about rook/knight/etc)
+// only describes "draw these assets here"
+struct CardLayer: Codable {
+    let imageName: String
+    let zPosition: CGFloat
+    var offset: CGPoint
+    
+    init(_ imageName: String, z: CGFloat, offset: CGPoint = .zero) {
+        self.imageName = imageName
+        self.zPosition = z
+        self.offset = offset
     }
 }
 
@@ -58,6 +76,7 @@ enum Player {
     case player2
 }
 
+// Owns config. layer
 class Card: SKSpriteNode {
     // MARK: Properties
     let frontTexture: SKTexture
@@ -68,21 +87,21 @@ class Card: SKSpriteNode {
     var isFaceUp: Bool = true
     var currentSlot: BattleSlot?
     let pieceType: PieceType
-    
+
     //initialize let properties BEFORE super.init
     init(data: CardData, backImage: String) {
         self.backTexture = SKTexture(imageNamed: backImage)
         self.pieceType = data.pieceType
-        self.frontTexture = SKTexture(imageNamed: data.pieceType.imageName)
-        
-        //call super.init -> SKSpriteNode sets itself up
+        self.frontTexture = Card.renderFrontTexture(for: data.pieceType)
+
+        //call super.init -> SKSpriteNode sets itself up with the full card texture
         super.init(texture: frontTexture, color: .clear, size: frontTexture.size())
         
         //after super.init -> self is ready 0-> data pulled from cardData
+        self.setScale(0.3)
         self.attack = data.attack
         self.defense = data.defense
         self.abilities = data.abilities
-
         
     }
     
@@ -90,9 +109,7 @@ class Card: SKSpriteNode {
         fatalError("init(coder:) has not been implemented")
     }
     
-    
-    
-    //MARK: Animations
+    // MARK: Animations
     func flip() {
         
         guard action(forKey: "flip") == nil else { return }
@@ -133,8 +150,13 @@ class Card: SKSpriteNode {
         run(SKAction.repeatForever(combined), withKey: "selectedSway")
     }
     
+    static func renderFrontTexture(for pieceType: PieceType) -> SKTexture {
+        return SKTexture(imageNamed: "\(pieceType.name)-card")
+    }
+    
+    static func ==(lhs: Card, rhs: Card) -> Bool {
+        return lhs === rhs
+    }
 }
 
-func ==(lhs: Card, rhs: Card) -> Bool {
-    return lhs === rhs
-}
+

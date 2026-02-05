@@ -11,6 +11,7 @@ import GameplayKit
 class GameScene: SKScene {
     
     private var cardNode: SKSpriteNode!
+    private var bg: SKSpriteNode!
     
     var turnManager: TurnManager!
     
@@ -37,7 +38,11 @@ class GameScene: SKScene {
     var dragStartPosition: CGPoint?
     var dragStartZPosition: CGFloat?
     //Store reference to battle slots -> into arrays (multiple slots)
-    var battleSlots: [BattleSlot] = []
+    var player1Slots: [BattleSlot] = []
+    var player2Slots: [BattleSlot] = []
+    var currentSlots: [BattleSlot] {
+        return currentPlayer == .player1 ? player1Slots : player2Slots
+    }
     var player1Hand: Hand!
     var player2Hand: Hand!
     var gameTurns: Int = 0
@@ -50,22 +55,24 @@ class GameScene: SKScene {
     
     
     let card: Card?
-    let gameArea: CGRect
+    var gameArea: CGRect
     
     override init(size: CGSize) {
-        let maxAspectRatio: CGFloat = 16.0/9.0
-        let playableWidth = size.width / maxAspectRatio
-        let margin = (size.width - playableWidth) / 2
-        gameArea = CGRect(x: margin, y:0, width: playableWidth, height: size.height)
-        
+        gameArea = CGRect(x: 0, y: 0, width: size.width, height: size.height)
         card = nil
-        
         super.init(size: size)
+        recalculateGameArea()
     }
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
     
+    private func recalculateGameArea() {
+        let maxAspectRatio: CGFloat = 16.0 / 9.0
+        let playableWidth = size.width / maxAspectRatio
+        let margin = (size.width - playableWidth) / 2
+        gameArea = CGRect(x: margin, y: 0, width: playableWidth, height: size.height)
     }
     
     func dealHand(for player: Player) {
@@ -84,7 +91,6 @@ class GameScene: SKScene {
         
         for cardData in drawnCardData {
             let card = Card(data: cardData, backImage: "card_back")
-            card.setScale(2)
             if player == .player2 {
                 card.isHidden = true
             }
@@ -94,59 +100,104 @@ class GameScene: SKScene {
     }
     
     override func didMove(to view: SKView) {
+        bg = SKSpriteNode(imageNamed: "Final_Background")
+        bg.zPosition = -1
+        addChild(bg)
+        
         turnManager = TurnManager(cardsPerTurn: 4)
         turnManager.delegate = self
         
         let slotSize = CGSize(width: 80, height: 120)
-        let slotSpacing: CGFloat = 200
-        let totalWidth = slotSpacing * 3
-        let startX = gameArea.midX - totalWidth / 2
         
-        //make player1's slot
-        for i in 0..<4 {
+        //make player1's slots
+        for _ in 0..<4 {
             let slot = BattleSlot(size: slotSize, owner: .player1)
-            slot.position = CGPoint(
-                x: startX + CGFloat(i) * slotSpacing,
-                y: gameArea.midY
-            )
             addChild(slot)
-            battleSlots.append(slot)
+            player1Slots.append(slot)
         }
         
-//health bar displays
+        for _ in 0..<4 {
+            let slot = BattleSlot(size: slotSize, owner: .player2)
+            addChild(slot)
+            player2Slots.append(slot)
+        }
+        
+        // Health bar displays
         p1Health = HealthBar(maxHP: 50)
         p1HBView = HealthbarView(healthBar: p1Health, width: size.width * 0.4)
-        p1HBView.position = CGPoint(x: 20, y: size.height * 0.15 + 140)
         addChild(p1HBView)
 
         p2Health = HealthBar(maxHP: 50)
         p2HBView = HealthbarView(healthBar: p2Health, width: size.width * 0.4)
-        p2HBView.position = CGPoint(x: 20, y: size.height * 0.85 + 120)
         addChild(p2HBView)
 
-        //King and queen point tracker
+        // Point trackers
         let p1Tracker = PointTracker()
         p1TrackerView = PointTrackerView(pointTracker: p1Tracker, width: size.width * 0.2)
-        p1TrackerView.position = CGPoint(x: 20, y: size.height * 0.15 + 180)
         addChild(p1TrackerView)
 
         let p2Tracker = PointTracker()
         p2TrackerView = PointTrackerView(pointTracker: p2Tracker, width: size.width * 0.2)
-        p2TrackerView.position = CGPoint(x: 20, y: size.height * 0.85 + 160)
         addChild(p2TrackerView)
         
-        player1Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.15))
-        player2Hand = Hand(position: CGPoint(x: gameArea.midX, y: gameArea.height * 0.85))
+        player1Hand = Hand(position: .zero)
+        player2Hand = Hand(position: .zero)
         
         player1Deck = DeckBuilder.standardDeck()
         player2Deck = DeckBuilder.standardDeck()
+        
+        layoutUI()
         
         dealHand(for: .player1)
         dealHand(for: .player2)
     }
     
+    override func didChangeSize(_ oldSize: CGSize) {
+        super.didChangeSize(oldSize)
+        recalculateGameArea()
+        layoutUI()
+    }
+    
+    func layoutUI() {
+        // Background
+        bg?.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        bg?.size = size
+        
+        // Battle slots
+        let slotSpacing: CGFloat = 200
+        let totalWidth = slotSpacing * 3
+        let startX = gameArea.midX - totalWidth / 2
+        for (i, slot) in player1Slots.enumerated() {
+            slot.position = CGPoint(
+                x: startX + CGFloat(i) * slotSpacing,
+                y: gameArea.midY
+            )
+        }
+        for (i, slot) in player2Slots.enumerated() {
+            slot.position = CGPoint(
+                x: startX + CGFloat(i) * slotSpacing,
+                y: gameArea.midY
+            )
+        }
+        
+        // Health bars
+        p1HBView?.position = CGPoint(x: 20, y: size.height * 0.15 + 140)
+        p2HBView?.position = CGPoint(x: 20, y: size.height * 0.85 + 120)
+        
+        // Point trackers
+        p1TrackerView?.position = CGPoint(x: 20, y: size.height * 0.15 + 180)
+        p2TrackerView?.position = CGPoint(x: 20, y: size.height * 0.85 + 160)
+        
+        // Hands
+        player1Hand?.position = CGPoint(x: gameArea.midX, y: size.height * 0.15)
+        player1Hand?.layoutCards()
+        player2Hand?.position = CGPoint(x: gameArea.midX, y: size.height * 0.85)
+        player2Hand?.layoutCards()
+    }
+    
     // "Began" fires when finger first touches screen, use nodes(at:) to find WHAT is under touch point
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard turnManager.currentPhase == .placing else { return }
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
         let touchedNodes = nodes(at: location)
@@ -210,7 +261,7 @@ class GameScene: SKScene {
                 card.currentSlot = newSlot
                 
                 if currentPlayer == .player1 {
-                    if let slotIndex = battleSlots.firstIndex(of: newSlot) {
+                    if let slotIndex = currentSlots.firstIndex(of: newSlot) {
                         player1PlacedCards[slotIndex] = card
                     }
                     //adds points to p1 point tracker
@@ -221,7 +272,7 @@ class GameScene: SKScene {
                     print("\(currentPlayer) placed: \(card.pieceType.name) w/ ATK \(card.attack), DEF \(card.defense), current played points: \(player1PlayedPoints)")
                 }
                 if currentPlayer == .player2 {
-                    if let slotIndex = battleSlots.firstIndex(of: newSlot) {
+                    if let slotIndex = currentSlots.firstIndex(of: newSlot) {
                         player2PlacedCards[slotIndex] = card
                     }
                     //add points to p2 point tracker
@@ -232,10 +283,10 @@ class GameScene: SKScene {
                     print("\(currentPlayer) placed: \(card.pieceType.name) w/ ATK \(card.attack), DEF \(card.defense)")
                 }
                 
-                let filledCount = battleSlots.filter { $0.isOccupied } .count
+                let filledCount = currentSlots.filter { $0.isOccupied } .count
                 turnManager.cardPlaced(totalFilledSlots: filledCount)
             }
-             else if card.currentSlot != nil && abs(card.position.y - currentHand.position.y) < 150 {
+             else if card.currentSlot != nil && isNearHand {
                 removeCardFromSlot(card)
                 currentHand.addCard(card)
             } else {
@@ -253,7 +304,7 @@ class GameScene: SKScene {
     
     //create a "battleSlot" for the card 
     func battleSlotUnderCard(_ card: Card) -> BattleSlot? {
-        for slot in battleSlots {
+        for slot in currentSlots {
             if slot.frame.intersects(card.frame) && !slot.isOccupied {
                 return slot
             }
@@ -269,7 +320,7 @@ class GameScene: SKScene {
     
     func removeCardFromSlot(_ card: Card) {
         guard let oldSlot = card.currentSlot else {return}
-        if let slotIndex = battleSlots.firstIndex(of: oldSlot) {
+        if let slotIndex = currentSlots.firstIndex(of: oldSlot) {
             if currentPlayer == .player1 {
                 player1PlacedCards[slotIndex] = nil
             } else if currentPlayer == .player2 {
@@ -281,19 +332,116 @@ class GameScene: SKScene {
         
         }
     
+    func layoutForCombat() {
+        let spacing: CGFloat = 200
+        let totalWidth = spacing * 3
+        let startX = size.width / 2 - totalWidth / 2
+        
+        for (i, card) in player1PlacedCards.enumerated() {
+            guard let card = card else {continue}
+            card.isHidden = false
+            let target = CGPoint(x: startX + CGFloat(i) * spacing, y: size.height * 0.4)
+            card.run(SKAction.move(to: target, duration: 0.5))
+        }
+        for (i, card) in player2PlacedCards.enumerated() {
+            guard let card = card else {continue}
+            card.isHidden = false
+            let target = CGPoint(x: startX + CGFloat(i) * spacing, y: size.height * 0.6)
+            card.run(SKAction.move(to: target, duration: 0.5))
+        }
+    }
+    
     func startCombatPhase() {
         print("Combat Phase")
         
-        for card in player1PlacedCards {
-            card?.isHidden = false
-        }
-        for card in player2PlacedCards {
-            card?.isHidden = false
-        }
+        for card in player1Hand.cards { card.isHidden = true }
+        for card in player2Hand.cards { card.isHidden = true }
+        layoutForCombat()
+        
         
         //TODO: Position P1 and P2 cards
         //TODO: Animate Battle
         //TODO: Calculate damage
+    }
+    
+    func playCombatSequence(results: [SlotResult], index: Int) {
+        //Base case, all slots resolved
+        guard index < results.count else {
+            //Combat over, check health
+            if p1Health.isDead {
+                print("Player 1 has been defeated, Player 2 Wins")
+            }
+            if p2Health.isDead {
+                print("Player 2 has been defeated, Player 1 Wins")
+            }
+            cleanUpAfterCombat()
+            turnManager.combatResolved(results: CombatResult(
+                slotResults: results,
+                player1DamageTaken: results.reduce(0) { $0 + $1.damageToP1 },
+                player2DamageTaken: results.reduce(0) { $0 + $1.damageToP2 },
+                player1CardsUsed: results.map { $0.p1Card },
+                player2CardsUsed: results.map { $0.p2Card }
+            ))
+            return
+        }
+        
+        let slot = results[index]
+        let p1Card = slot.p1Card
+        let p2Card = slot.p2Card
+        
+        //Save original pos.
+        let p1Origin = p1Card.position
+        let p2Origin = p2Card.position
+        
+        //Attack anim.
+        let p1Lunge = SKAction.moveBy(x: 0, y: 60, duration: 0.15)
+        let p1Return = SKAction.move(to: p1Origin, duration: 0.15)
+        let applyP1Dmg = SKAction.run {[weak self] in
+            self?.p2Health.reduceHP(slot.damageToP2)
+            self?.p2HBView.updateBar()
+        }
+        
+        let p2Lunge = SKAction.moveBy(x: 0, y: -60, duration: 0.15)
+        let p2Return = SKAction.move(to: p2Origin, duration: 0.15)
+        let applyP2Dmg = SKAction.run {[weak self] in
+            self?.p1Health.reduceHP(slot.damageToP1)
+            self?.p1HBView.updateBar()
+        }
+        
+        let applyHealing = SKAction.run {[weak self] in
+            if slot.p1Healed > 0 {
+                self?.p1Health.heal(slot.p1Healed)
+                self?.p1HBView.updateBar()
+            }
+            if slot.p2Healed > 0 {
+                self?.p2Health.heal(slot.p2Healed)
+                self?.p2HBView.updateBar()
+            }
+        }
+        let pause = SKAction.wait(forDuration: 0.5)
+        
+        // Build the full sequence for this slot
+        let p1Attack = SKAction.sequence([p1Lunge, p1Return])
+        
+        let p2Attack = SKAction.sequence([p2Lunge, p2Return])
+        
+        let fullSequence = SKAction.sequence([
+            // P1 attacks
+            SKAction.run { p1Card.run(p1Attack) },
+            applyP1Dmg,
+            SKAction.wait(forDuration: 0.35),
+            // P2 attacks
+            SKAction.run { p2Card.run(p2Attack) },
+            applyP2Dmg,
+            SKAction.wait(forDuration: 0.35),
+            // Healing
+            applyHealing,
+            pause
+        ])
+        
+        self.run(fullSequence) { [weak self] in
+            self?.playCombatSequence(results: results, index: index + 1)
+        }
     }
     
     func cleanUpAfterCombat() {
@@ -307,7 +455,10 @@ class GameScene: SKScene {
         player1PlacedCards = Array(repeating: nil, count: 4)
         player2PlacedCards = Array(repeating: nil, count: 4)
         
-        for slot in battleSlots {
+        for slot in player1Slots {
+            slot.isOccupied = false
+        }
+        for slot in player2Slots {
             slot.isOccupied = false
         }
     }
@@ -331,10 +482,11 @@ extension GameScene: TurnManagerDelegate {
         for card in newHand!.cards {
             card.isHidden = false
         }
-        for spot in battleSlots {
-            spot.isOccupied = false
-        }
-        for slot in battleSlots {
+        for slot in player1Slots { slot.isHidden = (player != .player1) }
+        for slot in player2Slots { slot.isHidden = (player != .player2) }
+        // Update slot colors for current player
+        let currentSlots = (player == .player1) ? player1Slots : player2Slots
+        for slot in currentSlots {
             slot.strokeColor = player == .player1 ? .blue : .red
         }
         
@@ -346,19 +498,11 @@ extension GameScene: TurnManagerDelegate {
     func turnManagerDidStartCombat(_ manager: TurnManager) {
         //show all cards, start battle animation
         startCombatPhase()
-        let combatResult = CombatResolver.resolve(p1Cards: player1PlacedCards, p2Cards: player2PlacedCards, p1Health: p1Health, p2Health: p2Health)
-        p1HBView.updateBar()
-        p2HBView.updateBar()
-        
-        if p1Health.isDead {
-            print("Player 1 has been defeated, Player 2 wins")
+        let combatResult = CombatResolver.resolve(p1Cards: player1PlacedCards, p2Cards: player2PlacedCards)
+        //Wait for layoutForCombat animation
+        self.run(SKAction.wait(forDuration: 0.6)) {[weak self] in
+            self?.playCombatSequence(results: combatResult.slotResults, index: 0)
         }
-        if p2Health.isDead {
-            print("Player 2 has been defeated, Player 1 wins")
-        }
-        
-        cleanUpAfterCombat()
-        turnManager.combatResolved(results: combatResult)
     }
     func turnManager(_ manager: TurnManager, didEnterPhase phase: TurnPhase) {
         //react to phase changes if needed
