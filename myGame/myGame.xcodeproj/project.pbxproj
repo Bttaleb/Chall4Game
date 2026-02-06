@@ -29,9 +29,22 @@
 		5DB4AB3E2F282189007C5E05 /* myGameUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = myGameUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B284BE792F3626E000EFA00D /* Exceptions for "myGame" folder in "myGame" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5DB4AB1A2F282188007C5E05 /* myGame */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		5DB4AB1D2F282188007C5E05 /* myGame */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B284BE792F3626E000EFA00D /* Exceptions for "myGame" folder in "myGame" target */,
+			);
 			path = myGame;
 			sourceTree = "<group>";
 		};
@@ -401,6 +414,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = P9DZD6XZMR;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = myGame/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -433,6 +447,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = P9DZD6XZMR;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = myGame/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;

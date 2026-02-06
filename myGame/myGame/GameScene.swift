@@ -49,6 +49,10 @@ class GameScene: SKScene {
     var player1Turn: Int = 0
     var player2Turn: Int = 0
     
+    
+    //displays combat numbers
+    var combatDisplay: CombatDisplay!
+    
     //store ref to point trackers
     var p1TrackerView: PointTrackerView!
     var p2TrackerView: PointTrackerView!
@@ -139,6 +143,9 @@ class GameScene: SKScene {
         let p2Tracker = PointTracker()
         p2TrackerView = PointTrackerView(pointTracker: p2Tracker, width: size.width * 0.2)
         addChild(p2TrackerView)
+        
+        //combat displays
+        combatDisplay = CombatDisplay(scene: self)
         
         player1Hand = Hand(position: .zero)
         player2Hand = Hand(position: .zero)
@@ -399,6 +406,9 @@ class GameScene: SKScene {
         let applyP1Dmg = SKAction.run {[weak self] in
             self?.p2Health.reduceHP(slot.damageToP2)
             self?.p2HBView.updateBar()
+            //combat display positioning
+            let pos = CGPoint(x: p2Card.position.x, y: p2Card.position.y + 100 )
+            self?.combatDisplay.showDamage(slot.damageToP2, position: pos, isPlayer1: false)
         }
         
         let p2Lunge = SKAction.moveBy(x: 0, y: -60, duration: 0.15)
@@ -406,6 +416,9 @@ class GameScene: SKScene {
         let applyP2Dmg = SKAction.run {[weak self] in
             self?.p1Health.reduceHP(slot.damageToP1)
             self?.p1HBView.updateBar()
+            //combat display positioning
+            let pos = CGPoint(x: p1Card.position.x, y: p1Card.position.y-100)
+            self?.combatDisplay.showDamage(slot.damageToP1, position: pos, isPlayer1: true)
         }
         
         let applyHealing = SKAction.run {[weak self] in
