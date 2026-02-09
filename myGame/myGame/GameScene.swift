@@ -12,6 +12,7 @@ class GameScene: SKScene {
     
     private var cardNode: SKSpriteNode!
     private var bg: SKSpriteNode!
+    private var bgeffects: SKEffectNode!
     
     var turnManager: TurnManager!
     
@@ -107,7 +108,12 @@ class GameScene: SKScene {
     override func didMove(to view: SKView) {
         bg = SKSpriteNode(imageNamed: "Final_Background")
         bg.zPosition = -1
-        addChild(bg)
+        //EFFECT TO BLUR BACKGROUND WHEN COMBAT STARTS
+        bgeffects = SKEffectNode()
+        bgeffects.addChild(bg)
+        addChild(bgeffects)
+        bgeffects.filter = CIFilter(name: "CIGaussianBlur", parameters: ["inputRadius": 10])
+        bgeffects.shouldEnableEffects = false
         
         turnManager = TurnManager(cardsPerTurn: 4)
         turnManager.delegate = self
@@ -205,7 +211,7 @@ class GameScene: SKScene {
         // Ready button
         let readyUp = SKSpriteNode(imageNamed: "confirm.png")
         readyUp.name = "readyUp"
-        readyUp.position = CGPoint(x: 600, y: size.height * 0.15 + 140)
+        readyUp.position = CGPoint(x: 640, y: size.height * 0.15 + 140)
         readyUp.size = CGSize(width: 320, height: 72)
         addChild(readyUp)
     }
@@ -379,6 +385,7 @@ class GameScene: SKScene {
         
         for card in player1Hand.cards { card.isHidden = true }
         for card in player2Hand.cards { card.isHidden = true }
+        bgeffects.shouldEnableEffects = true
         layoutForCombat()
         
         

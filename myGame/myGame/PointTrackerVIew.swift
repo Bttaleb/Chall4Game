@@ -14,6 +14,7 @@ class PointTrackerView: SKNode {
     private var backgroundBar: SKSpriteNode!
     private var fillBar: SKSpriteNode!
     private var outlineBar: SKShapeNode!
+    private var pointslabel: SKLabelNode!
     
     let barWidth : CGFloat
     let barHeight: CGFloat = 20
@@ -33,6 +34,13 @@ class PointTrackerView: SKNode {
         outlineBar.lineWidth = 2
         outlineBar.fillColor = .clear
         addChild(outlineBar)
+        
+        pointslabel = SKLabelNode(text: "0/60")
+        pointslabel.fontColor = .yellow
+        pointslabel.position = CGPoint(x: barWidth + 32, y: 0)
+        pointslabel.fontName = "ChineseRocksRg-Regular"
+        pointslabel.fontSize = 25
+        addChild(pointslabel)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -42,6 +50,8 @@ class PointTrackerView: SKNode {
         let percentage = pointTracker.fillPercentage
         let newWidth = barWidth * CGFloat(percentage)
         fillBar.run(SKAction.resize(toWidth: newWidth, duration: 0.01))
+        pointslabel.text = "\(pointTracker.currentPoints) / \(pointTracker.maxPoints)"
+
         
         //fillBar.size.width = barWidth * CGFloat(percentage)
 
