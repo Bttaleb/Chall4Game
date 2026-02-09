@@ -43,6 +43,7 @@ class GameScene: SKScene {
     var currentSlots: [BattleSlot] {
         return currentPlayer == .player1 ? player1Slots : player2Slots
     }
+    var playerIsReady: Bool? = false
     var player1Hand: Hand!
     var player2Hand: Hand!
     var gameTurns: Int = 0
@@ -200,6 +201,13 @@ class GameScene: SKScene {
         player1Hand?.layoutCards()
         player2Hand?.position = CGPoint(x: gameArea.midX, y: size.height * 0.85)
         player2Hand?.layoutCards()
+        
+        // Ready button
+        let readyUp = SKSpriteNode(imageNamed: "confirm.png")
+        readyUp.name = "readyUp"
+        readyUp.position = CGPoint(x: 600, y: size.height * 0.15 + 140)
+        readyUp.size = CGSize(width: 320, height: 72)
+        addChild(readyUp)
     }
     
     // "Began" fires when finger first touches screen, use nodes(at:) to find WHAT is under touch point
@@ -235,6 +243,14 @@ class GameScene: SKScene {
     
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
+        guard turnManager.currentPhase == .placing else { return }
+        guard let touch = touches.first else { return }
+        let location = touch.location(in: self)
+        let tappedNode = atPoint(location)
+        if tappedNode.name == "readyUp" && currentSlots.filter({$0.isOccupied}).count == 4 {
+            turnManager.handleTurnComplete()
+        }
         
         guard let card = selectedCard,
         let startPos = dragStartPosition else { return }
@@ -291,7 +307,7 @@ class GameScene: SKScene {
                 }
                 
                 let filledCount = currentSlots.filter { $0.isOccupied } .count
-                turnManager.cardPlaced(totalFilledSlots: filledCount)
+                
             }
              else if card.currentSlot != nil && isNearHand {
                 removeCardFromSlot(card)

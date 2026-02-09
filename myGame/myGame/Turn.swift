@@ -53,13 +53,6 @@ class TurnManager {
         self.cardPerTurn = cardsPerTurn
     }
     
-    func cardPlaced(totalFilledSlots: Int) {
-        guard currentPhase == .placing else { return }
-        if totalFilledSlots == cardPerTurn {
-            handleTurnComplete()
-        }
-    }
-    
     func handleTurnComplete() {
         if currentPlayer == .player1 {
             incrementTurnCount(for: .player1)
@@ -104,4 +97,6 @@ class TurnManager {
         delegate?.turnManager(self, didSwitchTo: .player1)
         incrementRound()
     }
+
 }
+
