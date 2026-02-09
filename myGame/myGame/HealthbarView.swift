@@ -23,18 +23,26 @@ class HealthbarView: SKNode {
         self.barWidth = width
         self.healthBar = healthBar
         super.init()
-        backgroundBar = SKSpriteNode(color: .darkGray, size: CGSize(width: barWidth, height: barHeight))
+        //backgroundBar = SKSpriteNode(color: .darkGray, size: CGSize(width: barWidth, height: barHeight))
+        //custom bar
+        backgroundBar = SKSpriteNode(imageNamed: "healthbargold")
+        backgroundBar.size = CGSize(width: barWidth, height: barHeight)
         backgroundBar.anchorPoint = CGPoint(x: 0, y: 0.5)
+        backgroundBar.zPosition = 0
         addChild(backgroundBar)
-        fillBar = SKSpriteNode(color: .green, size: CGSize(width: barWidth, height: barHeight))
+        //fillBar = SKSpriteNode(color: .green, size: CGSize(width: barWidth, height: barHeight))
+        //custom fillable bar
+        fillBar = SKSpriteNode(imageNamed: "healthbarred")
+        fillBar.size = CGSize(width: barWidth , height: barHeight)
         fillBar.anchorPoint = CGPoint(x: 0, y: 0.5)
+        fillBar.zPosition = 1
         addChild(fillBar)
         
         hpLabel = SKLabelNode(text: "50 / 50")
-        hpLabel.fontName = "Helvetica-Bold"
-        hpLabel.fontSize = 14
-        hpLabel.fontColor = .white
-        hpLabel.position = CGPoint(x: barWidth + 32, y: 0)
+        hpLabel.fontName = "ChineseRocksRg-Regular"
+        hpLabel.fontSize = 40
+        hpLabel.fontColor = .systemYellow
+        hpLabel.position = CGPoint(x: barWidth + 65, y: 0)
         addChild(hpLabel)
     }
     required init?(coder aDecoder: NSCoder) {
