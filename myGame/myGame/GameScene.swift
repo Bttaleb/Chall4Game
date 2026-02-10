@@ -63,6 +63,9 @@ class GameScene: SKScene {
     let card: Card?
     var gameArea: CGRect
     
+    //padding for HB AND PT
+    let padding: CGFloat = 30
+    
     override init(size: CGSize) {
         gameArea = CGRect(x: 0, y: 0, width: size.width, height: size.height)
         card = nil
@@ -196,11 +199,11 @@ class GameScene: SKScene {
         
         // Health bars
         p1HBView?.position = CGPoint(x: 20, y: size.height * 0.15 + 140)
-        p2HBView?.position = CGPoint(x: 20, y: size.height * 0.85 + 120)
-        
+        p2HBView?.position = CGPoint(x: 20, y: size.height - padding - 40)
+
         // Point trackers
         p1TrackerView?.position = CGPoint(x: 20, y: size.height * 0.15 + 180)
-        p2TrackerView?.position = CGPoint(x: 20, y: size.height * 0.85 + 160)
+        p2TrackerView?.position = CGPoint(x: 20, y: size.height - padding - 10)
         
         // Hands
         player1Hand?.position = CGPoint(x: gameArea.midX, y: size.height * 0.15)
