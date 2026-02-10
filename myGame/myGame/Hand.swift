@@ -6,7 +6,7 @@ class Hand {
     var cards: [Card] = []
     var position: CGPoint
     var columnSpacing: CGFloat = 120
-    var cardOverlap: CGFloat = 15
+    var cardOverlap: CGFloat = 40
     // piece type ordering for columns, left to right
     private let columnOrder: [PieceType] = [.pawn, .knight, .bishop, .rook, .queen, .king]
         
@@ -70,8 +70,8 @@ class Hand {
                     quantityLabel[pieceType] = label
                 }
                 
-                let cardTopEdge = position.y + (firstCard.size.height)
-                let offset: CGFloat = -72
+                let cardTopEdge = position.y + (firstCard.size.height / 2)
+                let offset: CGFloat = 4
                 
                 label.text = "x\(columnCards.count)"
                 label.position = CGPoint(x: x, y: cardTopEdge + offset)
