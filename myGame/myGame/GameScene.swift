@@ -51,6 +51,8 @@ class GameScene: SKScene {
     var player1Turn: Int = 0
     var player2Turn: Int = 0
     
+    //declaring ready up button
+    var readyUp: SKSpriteNode!
     
     //displays combat numbers
     var combatDisplay: CombatDisplay!
@@ -167,6 +169,13 @@ class GameScene: SKScene {
         
         dealHand(for: .player1)
         dealHand(for: .player2)
+        
+        // Ready button
+        readyUp = SKSpriteNode(imageNamed: "confirm.png")
+        readyUp.name = "readyUp"
+        readyUp.position = CGPoint(x: 640, y: size.height * 0.15 + 140)
+        readyUp.size = CGSize(width: 320, height: 72)
+        addChild(readyUp)
     }
     
     override func didChangeSize(_ oldSize: CGSize) {
@@ -211,12 +220,15 @@ class GameScene: SKScene {
         player2Hand?.position = CGPoint(x: gameArea.midX, y: size.height * 0.85)
         player2Hand?.layoutCards()
         
-        // Ready button
-        let readyUp = SKSpriteNode(imageNamed: "confirm.png")
-        readyUp.name = "readyUp"
-        readyUp.position = CGPoint(x: 640, y: size.height * 0.15 + 140)
-        readyUp.size = CGSize(width: 320, height: 72)
-        addChild(readyUp)
+//        // Ready button
+//        let readyUp = SKSpriteNode(imageNamed: "confirm.png")
+//        readyUp.name = "readyUp"
+//        readyUp.position = CGPoint(x: 640, y: size.height * 0.15 + 140)
+//        readyUp.size = CGSize(width: 320, height: 72)
+//        addChild(readyUp)
+        
+        //allowing screen to rotate and button will look fine
+        readyUp?.position = CGPoint(x: 640, y: size.height * 0.15 + 140)
     }
     
     // "Began" fires when finger first touches screen, use nodes(at:) to find WHAT is under touch point
