@@ -6,8 +6,7 @@ class Hand {
     var cards: [Card] = []
     var position: CGPoint
     var columnSpacing: CGFloat = 120
-    var cardOverlap: CGFloat = 40
-    
+    var cardOverlap: CGFloat = 15
     // piece type ordering for columns, left to right
     private let columnOrder: [PieceType] = [.pawn, .knight, .bishop, .rook, .queen, .king]
         
