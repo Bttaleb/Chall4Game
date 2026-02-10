@@ -164,6 +164,14 @@ class GameScene: SKScene {
         
         dealHand(for: .player1)
         dealHand(for: .player2)
+        
+        for label in player1Hand.getLabelsToHand() {
+            addChild(label)
+        }
+        
+        for label in player2Hand.getLabelsToHand() {
+            addChild(label)
+        }
     }
     
     override func didChangeSize(_ oldSize: CGSize) {
@@ -520,6 +528,7 @@ extension GameScene: TurnManagerDelegate {
         }
         for slot in player1Slots { slot.isHidden = (player != .player1) }
         for slot in player2Slots { slot.isHidden = (player != .player2) }
+        
         // Update slot colors for current player
         let currentSlots = (player == .player1) ? player1Slots : player2Slots
         for slot in currentSlots {
