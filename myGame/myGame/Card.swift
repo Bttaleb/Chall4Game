@@ -33,6 +33,15 @@ enum PieceType: CaseIterable {
         }
     }
     
+    var backImageName: String {
+        switch self {
+        case .pawn: return "pawn-back"
+        case .knight: return "knight-back"
+        case .bishop: return "bishop-back"
+        case .rook: return "rook-back"
+        case .queen: return "queen-back"
+        case .king: return "king-back"        }
+    }
     var cost: Int {
         switch self {
         case .pawn: return 0
@@ -89,8 +98,8 @@ class Card: SKSpriteNode {
     let pieceType: PieceType
 
     //initialize let properties BEFORE super.init
-    init(data: CardData, backImage: String) {
-        self.backTexture = SKTexture(imageNamed: backImage)
+    init(data: CardData) {
+        self.backTexture = SKTexture(imageNamed: data.pieceType.backImageName)
         self.pieceType = data.pieceType
         self.frontTexture = Card.renderFrontTexture(for: data.pieceType)
 

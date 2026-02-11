@@ -101,7 +101,7 @@ class GameScene: SKScene {
         let hand = player == .player1 ? player1Hand : player2Hand
         
         for cardData in drawnCardData {
-            let card = Card(data: cardData, backImage: "card_back")
+            let card = Card(data: cardData)
             if player == .player2 {
                 card.isHidden = true
             }
@@ -140,11 +140,11 @@ class GameScene: SKScene {
         
         // Health bar displays
         p1Health = HealthBar(maxHP: 50)
-        p1HBView = HealthbarView(healthBar: p1Health, width: size.width * 0.4)
+        p1HBView = HealthbarView(healthBar: p1Health, width: size.width * 0.4, fillImageName: "healthbarred")
         addChild(p1HBView)
 
         p2Health = HealthBar(maxHP: 50)
-        p2HBView = HealthbarView(healthBar: p2Health, width: size.width * 0.4)
+        p2HBView = HealthbarView(healthBar: p2Health, width: size.width * 0.4, fillImageName: "healthbar_blue")
         addChild(p2HBView)
 
         // Point trackers
@@ -199,9 +199,10 @@ class GameScene: SKScene {
         bg?.size = size
         
         // Battle slots
-        let slotSpacing: CGFloat = 200
+        let slotSpacing: CGFloat = 160
         let totalWidth = slotSpacing * 3
         let startX = gameArea.midX - totalWidth / 2
+        let endX = startX + totalWidth
         for (i, slot) in player1Slots.enumerated() {
             slot.position = CGPoint(
                 x: startX + CGFloat(i) * slotSpacing,
@@ -216,8 +217,11 @@ class GameScene: SKScene {
         }
         
         // Health bars
-        p1HBView?.position = CGPoint(x: 20, y: size.height * 0.15 + 140)
-        p2HBView?.position = CGPoint(x: 20, y: size.height - padding - 40)
+        let healthBarOffset: CGFloat = 100
+        p1HBView?.position = CGPoint(x: startX - healthBarOffset, y: gameArea.midY - healthBarOffset)
+        p1HBView?.zRotation = .pi / 2
+        p2HBView?.position = CGPoint(x: endX + healthBarOffset, y: gameArea.midY - healthBarOffset)
+        p2HBView?.zRotation = .pi / 2
 
         // Point trackers
         p1TrackerView?.position = CGPoint(x: 20, y: size.height * 0.15 + 180)
@@ -546,9 +550,12 @@ extension GameScene: TurnManagerDelegate {
         for slot in player2Slots { slot.isHidden = (player != .player2) }
         
         // Update slot colors for current player
-        let currentSlots = (player == .player1) ? player1Slots : player2Slots
-        for slot in currentSlots {
-            slot.strokeColor = player == .player1 ? .blue : .red
+        for slot in player1Slots {
+            slot.strokeColor = .red
+        }
+        
+        for slot in player2Slots {
+            slot.strokeColor = .blue
         }
         
         currentPlayer = player
