@@ -17,7 +17,7 @@ class PointTracker {
     }
 
     func addPoints(_ amount: Int) {
-        currentPoints = min(maxPoints, currentPoints + amount)
+        currentPoints = max(0, min(maxPoints, currentPoints + amount))
     }
 
     var isUnlocked: Bool {

@@ -155,7 +155,8 @@ class GameScene: SKScene {
         let p2Tracker = PointTracker()
         p2TrackerView = PointTrackerView(pointTracker: p2Tracker, width: size.width * 0.2)
         addChild(p2TrackerView)
-        
+        p2TrackerView.isHidden = true
+
         //combat displays
         combatDisplay = CombatDisplay(scene: self)
         
@@ -383,15 +384,22 @@ class GameScene: SKScene {
         if let slotIndex = currentSlots.firstIndex(of: oldSlot) {
             if currentPlayer == .player1 {
                 player1PlacedCards[slotIndex] = nil
+                let points = card.attack + card.defense
+                p1TrackerView.pointTracker.addPoints(-points)
+                player1PlayedPoints -= points
+                p1TrackerView.updateBar()
             } else if currentPlayer == .player2 {
-                player2PlacedCards[slotIndex] = nil
+                    player2PlacedCards[slotIndex] = nil
+                    let points = card.attack + card.defense
+                p2TrackerView.pointTracker.addPoints(-points)
+                player2PlayedPoints -= points
+                p2TrackerView.updateBar()
+                }
             }
-        }
             oldSlot.isOccupied = false
             card.currentSlot = nil
-        
         }
-    
+
     func layoutForCombat() {
         let spacing: CGFloat = 200
         let totalWidth = spacing * 3
@@ -416,6 +424,8 @@ class GameScene: SKScene {
         
         for card in player1Hand.cards { card.isHidden = true }
         for card in player2Hand.cards { card.isHidden = true }
+        p1TrackerView.isHidden = true
+        p2TrackerView.isHidden = true
         bgeffects.shouldEnableEffects = true
         layoutForCombat()
         
@@ -583,10 +593,14 @@ extension GameScene: TurnManagerDelegate {
             slot.strokeColor = .blue
         }
         
+        // Toggle point tracker visibility
+        p1TrackerView.isHidden = (player == .player2)
+        p2TrackerView.isHidden = (player == .player1)
+
         currentPlayer = player
         print("Now its \(currentPlayer)")
 
-        
+
     }
     
     func turnManagerDidStartCombat(_ manager: TurnManager) {

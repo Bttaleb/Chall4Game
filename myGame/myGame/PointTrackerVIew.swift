@@ -49,11 +49,8 @@ class PointTrackerView: SKNode {
     func updateBar() {
         let percentage = pointTracker.fillPercentage
         let newWidth = barWidth * CGFloat(percentage)
-        fillBar.run(SKAction.resize(toWidth: newWidth, duration: 0.01))
+        fillBar.size.width = newWidth
         pointslabel.text = "\(pointTracker.currentPoints) / \(pointTracker.maxPoints)"
-
-        
-        //fillBar.size.width = barWidth * CGFloat(percentage)
 
         
     }
