@@ -24,7 +24,7 @@ class BattleSlot: SKShapeNode {
         self.path = CGPath(roundedRect: rect, cornerWidth: 10, cornerHeight: 10, transform: nil)
         
         self.strokeColor = owner == .player1 ? .blue : .red
-        self.lineWidth = 3
+        self.lineWidth = 6
         self.fillColor = .clear
         self.name = "battleSlot"
     }

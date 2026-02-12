@@ -101,7 +101,7 @@ class GameScene: SKScene {
         let hand = player == .player1 ? player1Hand : player2Hand
         
         for cardData in drawnCardData {
-            let card = Card(data: cardData, backImage: "card_back")
+            let card = Card(data: cardData)
             if player == .player2 {
                 card.isHidden = true
             }
@@ -140,11 +140,11 @@ class GameScene: SKScene {
         
         // Health bar displays
         p1Health = HealthBar(maxHP: 50)
-        p1HBView = HealthbarView(healthBar: p1Health, width: size.width * 0.4)
+        p1HBView = HealthbarView(healthBar: p1Health, width: size.width * 0.4, fillImageName: "healthbarred")
         addChild(p1HBView)
 
         p2Health = HealthBar(maxHP: 50)
-        p2HBView = HealthbarView(healthBar: p2Health, width: size.width * 0.4)
+        p2HBView = HealthbarView(healthBar: p2Health, width: size.width * 0.4, fillImageName: "healthbar_blue")
         addChild(p2HBView)
 
         // Point trackers
@@ -185,6 +185,9 @@ class GameScene: SKScene {
         readyUp.position = CGPoint(x: 640, y: size.height * 0.15 + 140)
         readyUp.size = CGSize(width: 320, height: 72)
         addChild(readyUp)
+
+        // Start the game
+        turnManager.startGame()
     }
     
     override func didChangeSize(_ oldSize: CGSize) {
@@ -199,9 +202,10 @@ class GameScene: SKScene {
         bg?.size = size
         
         // Battle slots
-        let slotSpacing: CGFloat = 200
+        let slotSpacing: CGFloat = 160
         let totalWidth = slotSpacing * 3
         let startX = gameArea.midX - totalWidth / 2
+        let endX = startX + totalWidth
         for (i, slot) in player1Slots.enumerated() {
             slot.position = CGPoint(
                 x: startX + CGFloat(i) * slotSpacing,
@@ -216,8 +220,11 @@ class GameScene: SKScene {
         }
         
         // Health bars
-        p1HBView?.position = CGPoint(x: 20, y: size.height * 0.15 + 140)
-        p2HBView?.position = CGPoint(x: 20, y: size.height - padding - 40)
+        let healthBarOffset: CGFloat = 100
+        p1HBView?.position = CGPoint(x: startX - healthBarOffset, y: gameArea.midY - healthBarOffset)
+        p1HBView?.zRotation = .pi / 2
+        p2HBView?.position = CGPoint(x: endX + healthBarOffset, y: gameArea.midY - healthBarOffset)
+        p2HBView?.zRotation = .pi / 2
 
         // Point trackers
         p1TrackerView?.position = CGPoint(x: 20, y: size.height * 0.15 + 180)
@@ -505,7 +512,7 @@ class GameScene: SKScene {
     }
     
     func cleanUpAfterCombat() {
-    
+
         for card in player1PlacedCards {
             card?.removeFromParent()
         }
@@ -514,13 +521,35 @@ class GameScene: SKScene {
         }
         player1PlacedCards = Array(repeating: nil, count: 4)
         player2PlacedCards = Array(repeating: nil, count: 4)
-        
+
         for slot in player1Slots {
             slot.isOccupied = false
         }
         for slot in player2Slots {
             slot.isOccupied = false
         }
+    }
+
+    func showRoundIndicator(round: Int) {
+        // Create the round indicator sprite
+        let roundIndicator = SKSpriteNode(imageNamed: "round\(round)")
+        roundIndicator.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        roundIndicator.zPosition = 200 // Very high to appear above everything
+        roundIndicator.alpha = 0
+        roundIndicator.setScale(0.5)
+        addChild(roundIndicator)
+
+        // Animation sequence: fade in + scale up, hold, then fade out
+        let fadeIn = SKAction.group([
+            SKAction.fadeIn(withDuration: 0.3),
+            SKAction.scale(to: 1.0, duration: 0.3)
+        ])
+        let hold = SKAction.wait(forDuration: 1.4)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.3)
+        let remove = SKAction.removeFromParent()
+
+        let sequence = SKAction.sequence([fadeIn, hold, fadeOut, remove])
+        roundIndicator.run(sequence)
     }
 
 }
@@ -546,9 +575,12 @@ extension GameScene: TurnManagerDelegate {
         for slot in player2Slots { slot.isHidden = (player != .player2) }
         
         // Update slot colors for current player
-        let currentSlots = (player == .player1) ? player1Slots : player2Slots
-        for slot in currentSlots {
-            slot.strokeColor = player == .player1 ? .blue : .red
+        for slot in player1Slots {
+            slot.strokeColor = .red
+        }
+        
+        for slot in player2Slots {
+            slot.strokeColor = .blue
         }
         
         currentPlayer = player
@@ -556,6 +588,7 @@ extension GameScene: TurnManagerDelegate {
 
         
     }
+    
     func turnManagerDidStartCombat(_ manager: TurnManager) {
         //show all cards, start battle animation
         startCombatPhase()
@@ -565,11 +598,18 @@ extension GameScene: TurnManagerDelegate {
             self?.playCombatSequence(results: combatResult.slotResults, index: 0)
         }
     }
+    
     func turnManager(_ manager: TurnManager, didEnterPhase phase: TurnPhase) {
         //react to phase changes if needed
     }
+    
     func turnManager(_ manager: TurnManager, didCompleteCombat results: CombatResult) {
         dealHand(for: .player1)
         dealHand(for: .player2)
     }
+
+    func turnManager(_ manager: TurnManager, roundStart round: Int) {
+        showRoundIndicator(round: round)
+    }
+
 }
