@@ -35,6 +35,7 @@ protocol TurnManagerDelegate: AnyObject {
     func turnManager(_ manager: TurnManager, didEnterPhase phase: TurnPhase)
     func turnManagerDidStartCombat(_ manager: TurnManager)
     func turnManager(_ manager: TurnManager, didCompleteCombat results: CombatResult)
+    func turnManager(_ manager: TurnManager, roundStart round: Int)
 }
 
 class TurnManager {
@@ -92,11 +93,19 @@ class TurnManager {
     
     func combatResolved(results: CombatResult) {
         delegate?.turnManager(self, didCompleteCombat: results)
+        incrementRound()
+        delegate?.turnManager(self, roundStart: roundNumber)
+        delegate?.turnManager(self, didEnterPhase: .placing)
         currentPlayer = .player1
         currentPhase = .placing
         delegate?.turnManager(self, didSwitchTo: .player1)
-        incrementRound()
     }
+
+    func startGame() {
+        incrementRound()
+        delegate?.turnManager(self, roundStart: roundNumber)
+    }
+    
 
 }
 
