@@ -64,7 +64,7 @@ class GameScene: SKScene {
     
     let card: Card?
     var gameArea: CGRect
-    
+        
     //padding for HB AND PT
     let padding: CGFloat = 30
     
@@ -102,6 +102,12 @@ class GameScene: SKScene {
         
         for cardData in drawnCardData {
             let card = Card(data: cardData)
+            
+            //locking King and queen
+            if  card.pieceType == .king || card.pieceType == .queen {
+                card.applyLock()
+            }
+
             if player == .player2 {
                 card.isHidden = true
             }
@@ -331,7 +337,16 @@ class GameScene: SKScene {
                     player1PlayedPoints += points
                     p1TrackerView.updateBar()
                     print("\(currentPlayer) placed: \(card.pieceType.name) w/ ATK \(card.attack), DEF \(card.defense), current played points: \(player1PlayedPoints)")
+                    if p1TrackerView.pointTracker.isUnlocked {
+                        for card in player1Hand.cards {
+                            if card.pieceType == .king || card.pieceType == .queen {
+                                card.removeLock()
+                            }
+                        }
+                    }
+
                 }
+                                
                 if currentPlayer == .player2 {
                     if let slotIndex = currentSlots.firstIndex(of: newSlot) {
                         player2PlacedCards[slotIndex] = card
@@ -342,6 +357,14 @@ class GameScene: SKScene {
                     player2PlayedPoints += points
                     p2TrackerView.updateBar()
                     print("\(currentPlayer) placed: \(card.pieceType.name) w/ ATK \(card.attack), DEF \(card.defense)")
+                    if p2TrackerView.pointTracker.isUnlocked {
+                        for card in player2Hand.cards {
+                            if card.pieceType == .king || card.pieceType == .queen {
+                                card.removeLock()
+                            }
+                        }
+                    }
+
                 }
                 
                 let filledCount = currentSlots.filter { $0.isOccupied } .count
@@ -376,7 +399,19 @@ class GameScene: SKScene {
     func canPlay(_ card: Card) -> Bool {
         let cardCost = card.pieceType.cost
         let currentPoints = currentPlayer == .player1 ? player1PlayedPoints : player2PlayedPoints
+        
+        
+        if card.pieceType == .king || card.pieceType == .queen {
+            let tracker = currentPlayer == .player1 ? p1TrackerView.pointTracker : p2TrackerView.pointTracker
+            if !tracker.isUnlocked {
+                return false
+            }
+        }
+        
+        
         return currentPoints >= cardCost
+        
+        
     }
     
     func removeCardFromSlot(_ card: Card) {

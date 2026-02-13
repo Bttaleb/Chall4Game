@@ -96,7 +96,8 @@ class Card: SKSpriteNode {
     var isFaceUp: Bool = true
     var currentSlot: BattleSlot?
     let pieceType: PieceType
-
+    var lockOverlay: SKLabelNode?
+    
     //initialize let properties BEFORE super.init
     init(data: CardData) {
         self.backTexture = SKTexture(imageNamed: data.pieceType.backImageName)
@@ -119,6 +120,28 @@ class Card: SKSpriteNode {
     }
     
     // MARK: Animations
+    
+    //king and queen locked func
+    func applyLock() {
+        self.color = .gray
+        self.colorBlendFactor = 0.7
+        
+        let lock = SKLabelNode(text: "X")
+        //can add custom image later
+        lock.fontSize = 150
+        lock.position = CGPoint(x:0, y:0)
+        lock.zPosition = 10
+        addChild(lock)
+        lockOverlay = lock
+    }
+    
+    func removeLock() {
+        self.colorBlendFactor = 0
+        lockOverlay?.removeFromParent()
+        lockOverlay = nil
+    }
+    
+    
     func flip() {
         
         guard action(forKey: "flip") == nil else { return }
@@ -139,6 +162,8 @@ class Card: SKSpriteNode {
         
         let flipSequence = SKAction.sequence([firstHalf, swapTexture, secondHalf])
         run(flipSequence, withKey: "flip")
+        
+        //king and queen locked func
     }
     
     func addFloatyAnimation() {
