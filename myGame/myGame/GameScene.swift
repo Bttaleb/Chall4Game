@@ -57,6 +57,9 @@ class GameScene: SKScene {
     //displays combat numbers
     var combatDisplay: CombatDisplay!
     
+    //displaus players turn
+    var turnBanner: TurnBanner!
+    
     //store ref to point trackers
     var p1TrackerView: PointTrackerView!
     var p2TrackerView: PointTrackerView!
@@ -166,6 +169,8 @@ class GameScene: SKScene {
         //combat displays
         combatDisplay = CombatDisplay(scene: self)
         
+        turnBanner = TurnBanner(scene: self)
+        
         player1Hand = Hand(position: .zero)
         player2Hand = Hand(position: .zero)
         
@@ -195,6 +200,8 @@ class GameScene: SKScene {
 
         // Start the game
         turnManager.startGame()
+        
+        turnBanner.showBanner(for: .player1)
     }
     
     override func didChangeSize(_ oldSize: CGSize) {
@@ -634,6 +641,8 @@ extension GameScene: TurnManagerDelegate {
 
         currentPlayer = player
         print("Now its \(currentPlayer)")
+        
+        turnBanner.showBanner(for: player)
 
 
     }
