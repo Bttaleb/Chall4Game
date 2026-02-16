@@ -59,6 +59,10 @@ class GameScene: SKScene {
     
     //displaus players turn
     var turnBanner: TurnBanner!
+
+    //onboarding overlay
+    var onboardingOverlay: OnboardingOverlay?
+    var helpButton: SKShapeNode!
     
     //store ref to point trackers
     var p1TrackerView: PointTrackerView!
@@ -199,6 +203,23 @@ class GameScene: SKScene {
         readyUp.size = CGSize(width: 320, height: 72)
         addChild(readyUp)
 
+        // Help button (top-right)
+        helpButton = SKShapeNode(circleOfRadius: 22)
+        helpButton.fillColor = .darkGray
+        helpButton.strokeColor = .white
+        helpButton.lineWidth = 2
+        helpButton.name = "helpButton"
+        helpButton.zPosition = 150
+        helpButton.position = CGPoint(x: size.width - 50, y: size.height - 50)
+        addChild(helpButton)
+        let helpLabel = SKLabelNode(text: "?")
+        helpLabel.fontName = "ChineseRocksRg-Regular"
+        helpLabel.fontSize = 28
+        helpLabel.fontColor = .white
+        helpLabel.verticalAlignmentMode = .center
+        helpLabel.name = "helpButton"
+        helpButton.addChild(helpLabel)
+
         // Start the game
         turnManager.startGame()
         
@@ -260,10 +281,14 @@ class GameScene: SKScene {
         
         //allowing screen to rotate and button will look fine
         readyUp?.position = CGPoint(x: 640, y: size.height * 0.15 + 140)
+
+        // Help button stays top-right on rotation
+        helpButton?.position = CGPoint(x: size.width - 50, y: size.height - 50)
     }
     
     // "Began" fires when finger first touches screen, use nodes(at:) to find WHAT is under touch point
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard onboardingOverlay == nil else { return }
         guard turnManager.currentPhase == .placing else { return }
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
@@ -295,11 +320,26 @@ class GameScene: SKScene {
     
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        
-        guard turnManager.currentPhase == .placing else { return }
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
         let tappedNode = atPoint(location)
+
+        // Onboarding overlay intercepts all taps while open
+        if let overlay = onboardingOverlay {
+            overlay.handleTap(at: location)
+            return
+        }
+
+        // Help button works during any phase
+        if tappedNode.name == "helpButton" || tappedNode.parent?.name == "helpButton" {
+            let overlay = OnboardingOverlay(scene: self)
+            overlay.onDismiss = { [weak self] in self?.onboardingOverlay = nil }
+            onboardingOverlay = overlay
+            overlay.show()
+            return
+        }
+
+        guard turnManager.currentPhase == .placing else { return }
         if tappedNode.name == "readyUp" && currentSlots.filter({$0.isOccupied}).count == 4 {
             turnManager.handleTurnComplete()
         }
