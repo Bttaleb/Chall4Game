@@ -189,6 +189,7 @@ class GameScene: SKScene {
 
         for label in player2Hand.getLabelsToHand() {
             addChild(label)
+            label.isHidden = true
         }
 
         // Ready button
@@ -442,32 +443,87 @@ class GameScene: SKScene {
             card.currentSlot = nil
         }
 
+    var combatOverlays: [SKShapeNode] = []
+
     func layoutForCombat() {
         let spacing: CGFloat = 200
         let totalWidth = spacing * 3
         let startX = size.width / 2 - totalWidth / 2
-        
+        let overlaySize = CGSize(width: 90, height: 130)
+
         for (i, card) in player1PlacedCards.enumerated() {
             guard let card = card else {continue}
             card.isHidden = false
-            let target = CGPoint(x: startX + CGFloat(i) * spacing, y: size.height * 0.4)
+            let target = CGPoint(x: startX + CGFloat(i) * spacing, y: size.height * 0.35)
             card.run(SKAction.move(to: target, duration: 0.5))
+
+            // Card overlay
+            let overlay = SKShapeNode(rectOf: overlaySize, cornerRadius: 8)
+            overlay.fillColor = .red.withAlphaComponent(0.3)
+            overlay.strokeColor = .red
+            overlay.lineWidth = 2
+            overlay.position = target
+            overlay.zPosition = -0.5
+            addChild(overlay)
+            combatOverlays.append(overlay)
         }
         for (i, card) in player2PlacedCards.enumerated() {
             guard let card = card else {continue}
             card.isHidden = false
-            let target = CGPoint(x: startX + CGFloat(i) * spacing, y: size.height * 0.6)
+            let target = CGPoint(x: startX + CGFloat(i) * spacing, y: size.height * 0.65)
             card.run(SKAction.move(to: target, duration: 0.5))
+
+            // Card overlay
+            let overlay = SKShapeNode(rectOf: overlaySize, cornerRadius: 8)
+            overlay.fillColor = .blue.withAlphaComponent(0.3)
+            overlay.strokeColor = .blue
+            overlay.lineWidth = 2
+            overlay.position = target
+            overlay.zPosition = -0.5
+            addChild(overlay)
+            combatOverlays.append(overlay)
         }
+
+        // Move health bars to top/bottom horizontal during combat
+        p1HBView.run(SKAction.group([
+            SKAction.move(to: CGPoint(x: size.width * 0.3, y: size.height * 0.08), duration: 0.5),
+            SKAction.rotate(toAngle: 0, duration: 0.5)
+        ]))
+        p1HBView.setCombatLayout()
+        p2HBView.run(SKAction.group([
+            SKAction.move(to: CGPoint(x: size.width * 0.3, y: size.height * 0.92), duration: 0.5),
+            SKAction.rotate(toAngle: 0, duration: 0.5)
+        ]))
+        p2HBView.setCombatLayout()
     }
     
     func startCombatPhase() {
         print("Combat Phase")
-        
+
         for card in player1Hand.cards { card.isHidden = true }
         for card in player2Hand.cards { card.isHidden = true }
         p1TrackerView.isHidden = true
         p2TrackerView.isHidden = true
+
+        // Hide quantity labels
+        for label in player1Hand.getLabelsToHand() {
+            label.isHidden = true
+        }
+        for label in player2Hand.getLabelsToHand() {
+            label.isHidden = true
+        }
+
+        // Hide ready button
+        readyUp.isHidden = true
+
+        // Hide slot outlines
+        for slot in player1Slots { slot.isHidden = true }
+        for slot in player2Slots { slot.isHidden = true }
+
+        // Show both health bars for combat
+        p1HBView.isHidden = false
+        p2HBView.isHidden = false
+
         bgeffects.shouldEnableEffects = true
         layoutForCombat()
         
@@ -477,90 +533,95 @@ class GameScene: SKScene {
         //TODO: Calculate damage
     }
     
-    func playCombatSequence(results: [SlotResult], index: Int) {
-        //Base case, all slots resolved
-        guard index < results.count else {
-            //Combat over, check health
-            if p1Health.isDead {
+    func playCombatSequence(results: [SlotResult]) {
+        var actions: [SKAction] = []
+
+        // Phase 1: All P1 cards attack
+        for slot in results {
+            let p1Card = slot.p1Card
+            let p1Origin = p1Card.position
+            let p1Attack = CombatAnimations.attackAnimation(for: p1Card, origin: p1Origin, direction: 1)
+
+            let applyDmg = SKAction.run { [weak self] in
+                self?.p2Health.reduceHP(slot.damageToP2)
+                self?.p2HBView.updateBar()
+                let pos = CGPoint(x: slot.p2Card.position.x, y: slot.p2Card.position.y + 100)
+                self?.combatDisplay.showDamage(slot.damageToP2, position: pos, isPlayer1: false)
+            }
+
+            actions.append(SKAction.run { p1Card.run(p1Attack) })
+            actions.append(SKAction.wait(forDuration: 0.3))
+            actions.append(applyDmg)
+            actions.append(SKAction.wait(forDuration: 0.6))
+        }
+
+        // Pause between P1 and P2 phases
+        actions.append(SKAction.wait(forDuration: 0.8))
+
+        // Phase 2: All P2 cards attack
+        for slot in results {
+            let p2Card = slot.p2Card
+            let p2Origin = p2Card.position
+            let p2Attack = CombatAnimations.attackAnimation(for: p2Card, origin: p2Origin, direction: -1)
+
+            let applyDmg = SKAction.run { [weak self] in
+                self?.p1Health.reduceHP(slot.damageToP1)
+                self?.p1HBView.updateBar()
+                let pos = CGPoint(x: slot.p1Card.position.x, y: slot.p1Card.position.y - 100)
+                self?.combatDisplay.showDamage(slot.damageToP1, position: pos, isPlayer1: true)
+            }
+
+            actions.append(SKAction.run { p2Card.run(p2Attack) })
+            actions.append(SKAction.wait(forDuration: 0.3))
+            actions.append(applyDmg)
+            actions.append(SKAction.wait(forDuration: 0.6))
+        }
+
+        // Phase 3: Apply all healing
+        let applyHealing = SKAction.run { [weak self] in
+            for slot in results {
+                if slot.p1Healed > 0 {
+                    self?.p1Health.heal(slot.p1Healed)
+                    self?.p1HBView.updateBar()
+                }
+                if slot.p2Healed > 0 {
+                    self?.p2Health.heal(slot.p2Healed)
+                    self?.p2HBView.updateBar()
+                }
+            }
+        }
+        actions.append(applyHealing)
+        actions.append(SKAction.wait(forDuration: 0.5))
+
+        // Phase 4: Check for death AFTER both sides attacked
+        let checkDeath = SKAction.run { [weak self] in
+            if self?.p1Health.isDead == true {
                 print("Player 1 has been defeated, Player 2 Wins")
             }
-            if p2Health.isDead {
+            if self?.p2Health.isDead == true {
                 print("Player 2 has been defeated, Player 1 Wins")
             }
-            cleanUpAfterCombat()
-            turnManager.combatResolved(results: CombatResult(
+        }
+        actions.append(checkDeath)
+        actions.append(SKAction.wait(forDuration: 0.5))
+
+        // Cleanup and resolve
+        let finish = SKAction.run { [weak self] in
+            self?.cleanUpAfterCombat()
+            let p1Dmg = results.reduce(0) { $0 + $1.damageToP1 }
+            let p2Dmg = results.reduce(0) { $0 + $1.damageToP2 }
+            let combatResult = CombatResult(
                 slotResults: results,
-                player1DamageTaken: results.reduce(0) { $0 + $1.damageToP1 },
-                player2DamageTaken: results.reduce(0) { $0 + $1.damageToP2 },
+                player1DamageTaken: p1Dmg,
+                player2DamageTaken: p2Dmg,
                 player1CardsUsed: results.map { $0.p1Card },
                 player2CardsUsed: results.map { $0.p2Card }
-            ))
-            return
+            )
+            self?.turnManager.combatResolved(results: combatResult)
         }
-        
-        let slot = results[index]
-        let p1Card = slot.p1Card
-        let p2Card = slot.p2Card
-        
-        //Save original pos.
-        let p1Origin = p1Card.position
-        let p2Origin = p2Card.position
-        
-        //Attack anim.
-        let p1Lunge = SKAction.moveBy(x: 0, y: 60, duration: 0.15)
-        let p1Return = SKAction.move(to: p1Origin, duration: 0.15)
-        let applyP1Dmg = SKAction.run {[weak self] in
-            self?.p2Health.reduceHP(slot.damageToP2)
-            self?.p2HBView.updateBar()
-            //combat display positioning
-            let pos = CGPoint(x: p2Card.position.x, y: p2Card.position.y + 100 )
-            self?.combatDisplay.showDamage(slot.damageToP2, position: pos, isPlayer1: false)
-        }
-        
-        let p2Lunge = SKAction.moveBy(x: 0, y: -60, duration: 0.15)
-        let p2Return = SKAction.move(to: p2Origin, duration: 0.15)
-        let applyP2Dmg = SKAction.run {[weak self] in
-            self?.p1Health.reduceHP(slot.damageToP1)
-            self?.p1HBView.updateBar()
-            //combat display positioning
-            let pos = CGPoint(x: p1Card.position.x, y: p1Card.position.y-100)
-            self?.combatDisplay.showDamage(slot.damageToP1, position: pos, isPlayer1: true)
-        }
-        
-        let applyHealing = SKAction.run {[weak self] in
-            if slot.p1Healed > 0 {
-                self?.p1Health.heal(slot.p1Healed)
-                self?.p1HBView.updateBar()
-            }
-            if slot.p2Healed > 0 {
-                self?.p2Health.heal(slot.p2Healed)
-                self?.p2HBView.updateBar()
-            }
-        }
-        let pause = SKAction.wait(forDuration: 0.5)
-        
-        // Build the full sequence for this slot
-        let p1Attack = SKAction.sequence([p1Lunge, p1Return])
-        
-        let p2Attack = SKAction.sequence([p2Lunge, p2Return])
-        
-        let fullSequence = SKAction.sequence([
-            // P1 attacks
-            SKAction.run { p1Card.run(p1Attack) },
-            applyP1Dmg,
-            SKAction.wait(forDuration: 0.35),
-            // P2 attacks
-            SKAction.run { p2Card.run(p2Attack) },
-            applyP2Dmg,
-            SKAction.wait(forDuration: 0.35),
-            // Healing
-            applyHealing,
-            pause
-        ])
-        
-        self.run(fullSequence) { [weak self] in
-            self?.playCombatSequence(results: results, index: index + 1)
-        }
+        actions.append(finish)
+
+        self.run(SKAction.sequence(actions))
     }
     
     func cleanUpAfterCombat() {
@@ -580,6 +641,39 @@ class GameScene: SKScene {
         for slot in player2Slots {
             slot.isOccupied = false
         }
+
+        // Remove combat overlays
+        for overlay in combatOverlays {
+            overlay.removeFromParent()
+        }
+        combatOverlays.removeAll()
+
+        // Restore health bars to original vertical positions
+        let slotSpacing: CGFloat = 160
+        let totalWidth = slotSpacing * 3
+        let startX = gameArea.midX - totalWidth / 2
+        let endX = startX + totalWidth
+        let healthBarOffset: CGFloat = 100
+        p1HBView.run(SKAction.group([
+            SKAction.move(to: CGPoint(x: startX - healthBarOffset, y: gameArea.midY - healthBarOffset), duration: 0.5),
+            SKAction.rotate(toAngle: .pi / 2, duration: 0.5)
+        ]))
+        p1HBView.setNormalLayout()
+        p2HBView.run(SKAction.group([
+            SKAction.move(to: CGPoint(x: endX + healthBarOffset, y: gameArea.midY - healthBarOffset), duration: 0.5),
+            SKAction.rotate(toAngle: .pi / 2, duration: 0.5)
+        ]))
+        p2HBView.setNormalLayout()
+
+        // Show UI again after combat
+        for label in player1Hand.getLabelsToHand() {
+            label.isHidden = false
+        }
+        for label in player2Hand.getLabelsToHand() {
+            label.isHidden = false
+        }
+        readyUp.isHidden = false
+        bgeffects.shouldEnableEffects = false
     }
 
     func showRoundIndicator(round: Int) {
@@ -639,6 +733,52 @@ extension GameScene: TurnManagerDelegate {
         p1TrackerView.isHidden = (player == .player2)
         p2TrackerView.isHidden = (player == .player1)
 
+        // Toggle quantity labels
+        for label in player1Hand.getLabelsToHand() {
+            label.isHidden = (player == .player2)
+        }
+        for label in player2Hand.getLabelsToHand() {
+            label.isHidden = (player == .player1)
+        }
+
+        // Health bars: own bar vertical on side, opponent's bar horizontal on opposite end
+        let slotSpacing: CGFloat = 160
+        let totalSlotWidth = slotSpacing * 3
+        let slotStartX = gameArea.midX - totalSlotWidth / 2
+        let slotEndX = slotStartX + totalSlotWidth
+        let hbOffset: CGFloat = 100
+
+        p1HBView.isHidden = false
+        p2HBView.isHidden = false
+
+        if player == .player1 {
+            // P1's bar stays vertical on left side
+            p1HBView.run(SKAction.group([
+                SKAction.move(to: CGPoint(x: slotStartX - hbOffset, y: gameArea.midY - hbOffset), duration: 0.5),
+                SKAction.rotate(toAngle: .pi / 2, duration: 0.5)
+            ]))
+            p1HBView.setNormalLayout()
+            // P2's bar goes horizontal at top
+            p2HBView.run(SKAction.group([
+                SKAction.move(to: CGPoint(x: size.width * 0.3, y: size.height * 0.92), duration: 0.5),
+                SKAction.rotate(toAngle: 0, duration: 0.5)
+            ]))
+            p2HBView.setCombatLayout()
+        } else {
+            // P2's bar stays vertical on right side
+            p2HBView.run(SKAction.group([
+                SKAction.move(to: CGPoint(x: slotEndX + hbOffset, y: gameArea.midY - hbOffset), duration: 0.5),
+                SKAction.rotate(toAngle: .pi / 2, duration: 0.5)
+            ]))
+            p2HBView.setNormalLayout()
+            // P1's bar goes horizontal at bottom
+            p1HBView.run(SKAction.group([
+                SKAction.move(to: CGPoint(x: size.width * 0.3, y: size.height * 0.08), duration: 0.5),
+                SKAction.rotate(toAngle: 0, duration: 0.5)
+            ]))
+            p1HBView.setCombatLayout()
+        }
+
         currentPlayer = player
         print("Now its \(currentPlayer)")
         
@@ -653,7 +793,7 @@ extension GameScene: TurnManagerDelegate {
         let combatResult = CombatResolver.resolve(p1Cards: player1PlacedCards, p2Cards: player2PlacedCards)
         //Wait for layoutForCombat animation
         self.run(SKAction.wait(forDuration: 0.6)) {[weak self] in
-            self?.playCombatSequence(results: combatResult.slotResults, index: 0)
+            self?.playCombatSequence(results: combatResult.slotResults)
         }
     }
     

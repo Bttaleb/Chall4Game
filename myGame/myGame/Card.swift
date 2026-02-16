@@ -57,13 +57,23 @@ enum PieceType: CaseIterable {
         switch self {
         case .pawn: return (5, 0, [])
         case .knight: return (10, 0, [.pierce])
-        case .bishop: return (0, 0, [.shield]) //25%
-        case .rook: return (0, 0, [.shield]) //50%
+        case .bishop: return (0, 0, [.shield])
+        case .rook: return (0, 0, [.shield])
         case .queen: return (25, 0, [.lifesteal])
-        case .king: return (0, 0, [.shield]) //75%
+        case .king: return (0, 0, [.shield])
         }
     }
-        
+
+    // Shield strength: how much damage is blocked (0.0 to 1.0)
+    var shieldStrength: Double {
+        switch self {
+        case .bishop: return 0.25
+        case .rook: return 0.50
+        case .king: return 0.75
+        default: return 0.0
+        }
+    }
+
 }
 
 // CardLayer - Rendering Data (does NOT know about rook/knight/etc)
@@ -121,13 +131,13 @@ class Card: SKSpriteNode {
     
     // MARK: Animations
     
-    //king and queen locked func
+    //king and queen locked
     func applyLock() {
         self.color = .gray
         self.colorBlendFactor = 0.7
         
         let lock = SKLabelNode(text: "X")
-        //can add custom image later
+        // add custom image later
         lock.fontSize = 150
         lock.position = CGPoint(x:0, y:0)
         lock.zPosition = 10

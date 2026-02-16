@@ -56,6 +56,16 @@ class HealthbarView: SKNode {
         fillBar.size.width = barWidth * CGFloat(percentage)
         hpLabel.text = "\(healthBar.currentHP) / \(healthBar.maxHP)"
     }
+
+    func setCombatLayout() {
+        hpLabel.zRotation = 0
+        hpLabel.position = CGPoint(x: barWidth / 2, y: barHeight)
+    }
+
+    func setNormalLayout() {
+        hpLabel.zRotation = .pi / -2
+        hpLabel.position = CGPoint(x: barWidth + 12, y: 0)
+    }
 }
 
 //swap to custom art

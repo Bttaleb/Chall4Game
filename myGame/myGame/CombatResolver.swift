@@ -22,8 +22,8 @@ struct CombatResolver {
             let p2ShieldActive = p2Card.abilities.contains(.shield)
             
             //calc damage — p1's shield reduces p2's attack on this slot, and vice versa
-            let p1Breakdown = calculateDamage(attacker: p1Card, defender: p2Card, hasActiveShield: p2ShieldActive)
-            let p2Breakdown = calculateDamage(attacker: p2Card, defender: p1Card, hasActiveShield: p1ShieldActive)
+            let p1Breakdown = calculateDamage(attacker: p1Card, defender: p2Card, shieldStrength: p2ShieldActive ? p2Card.pieceType.shieldStrength : 0)
+            let p2Breakdown = calculateDamage(attacker: p2Card, defender: p1Card, shieldStrength: p1ShieldActive ? p1Card.pieceType.shieldStrength : 0)
             
             let dmgToP2 = p1Breakdown.finalDamage
             let dmgToP1 = p2Breakdown.finalDamage
@@ -73,28 +73,28 @@ struct CombatResolver {
         let preShieldDamage: Int
     }
     
-    private static func calculateDamage(attacker: Card, defender: Card, hasActiveShield: Bool) -> DamageBreakdown {
-    
+    private static func calculateDamage(attacker: Card, defender: Card, shieldStrength: Double) -> DamageBreakdown {
+
         var damage = max(0, attacker.attack - defender.defense)
-        
+
         if attacker.abilities.contains(.pierce) {
             damage = attacker.attack
         }
-        
+
         if attacker.abilities.contains(.doublestrike) {
             damage = damage * 2
         }
-        
+
         let preShieldDamage = damage
-                
-        if hasActiveShield {
-            damage = damage / 2
+
+        if shieldStrength > 0 {
+            damage = Int(Double(damage) * (1.0 - shieldStrength))
         }
-        
+
         return DamageBreakdown(
             finalDamage: damage,
             baseDamage: attacker.attack,
-            wasShielded: hasActiveShield,
+            wasShielded: shieldStrength > 0,
             preShieldDamage: preShieldDamage
         )
     }
