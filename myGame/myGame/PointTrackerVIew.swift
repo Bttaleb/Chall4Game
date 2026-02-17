@@ -35,7 +35,7 @@ class PointTrackerView: SKNode {
         outlineBar.fillColor = .clear
         addChild(outlineBar)
         
-        pointslabel = SKLabelNode(text: "0/60")
+        pointslabel = SKLabelNode(text: "0/40")
         pointslabel.fontColor = .yellow
         pointslabel.position = CGPoint(x: barWidth + 32, y: -8)
         pointslabel.fontName = "ChineseRocksRg-Regular"

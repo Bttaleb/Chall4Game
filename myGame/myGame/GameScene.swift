@@ -483,7 +483,7 @@ class GameScene: SKScene {
             card.currentSlot = nil
         }
 
-    var combatOverlays: [SKShapeNode] = []
+    var combatOverlays: [SKSpriteNode] = []
 
     func layoutForCombat() {
         let spacing: CGFloat = 200
@@ -498,15 +498,14 @@ class GameScene: SKScene {
             card.run(SKAction.move(to: target, duration: 0.5))
 
             // Card overlay
-            let overlay = SKShapeNode(rectOf: overlaySize, cornerRadius: 8)
-            overlay.fillColor = .red.withAlphaComponent(0.3)
-            overlay.strokeColor = .red
-            overlay.lineWidth = 2
+            let overlay = SKSpriteNode(texture: SKTexture(imageNamed: "green_slot"), size: overlaySize)
             overlay.position = target
             overlay.zPosition = -0.5
             addChild(overlay)
             combatOverlays.append(overlay)
         }
+        
+        
         for (i, card) in player2PlacedCards.enumerated() {
             guard let card = card else {continue}
             card.isHidden = false
@@ -514,10 +513,7 @@ class GameScene: SKScene {
             card.run(SKAction.move(to: target, duration: 0.5))
 
             // Card overlay
-            let overlay = SKShapeNode(rectOf: overlaySize, cornerRadius: 8)
-            overlay.fillColor = .blue.withAlphaComponent(0.3)
-            overlay.strokeColor = .blue
-            overlay.lineWidth = 2
+            let overlay = SKSpriteNode(texture: SKTexture(imageNamed: "yellow_slot"), size: overlaySize)
             overlay.position = target
             overlay.zPosition = -0.5
             addChild(overlay)
@@ -761,13 +757,14 @@ extension GameScene: TurnManagerDelegate {
         for slot in player2Slots { slot.isHidden = (player != .player2) }
         
         // Update slot colors for current player
-        for slot in player1Slots {
-            slot.strokeColor = .red
-        }
-        
-        for slot in player2Slots {
-            slot.strokeColor = .blue
-        }
+//        for slot in player1Slots {
+//            slot.strokeColor = .red
+//        }
+//        
+//        for slot in player2Slots {
+//            slot.strokeColor = .blue
+//        }
+        //no need for ^ changed it to asset
         
         // Toggle point tracker visibility
         p1TrackerView.isHidden = (player == .player2)

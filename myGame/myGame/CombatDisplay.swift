@@ -23,7 +23,7 @@ class CombatDisplay {
         label.fontSize = 200
         label.position = position
         label.zPosition = 200
-        label.fontColor = isPlayer1 ? .red : .blue  
+        label.fontColor = isPlayer1 ? .red : .yellow
         scene.addChild(label)
         
         let moveUp = SKAction.moveBy(x: 0, y: 50, duration: 1.0)

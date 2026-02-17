@@ -11,7 +11,7 @@ class PointTracker {
     var currentPoints: Int
     let maxPoints: Int
 
-    init(maxPoints: Int = 60) {
+    init(maxPoints: Int = 40) {
         self.currentPoints = 0
         self.maxPoints = maxPoints
     }
