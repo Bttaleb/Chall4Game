@@ -98,7 +98,7 @@ struct CombatResolver {
             preShieldDamage: preShieldDamage
         )
     }
-    
+     
     //lifesteal helper
     static func applyLifesteal(card: Card, damage: Int, health: HealthBar) {
         if card.abilities.contains(.lifesteal) && damage > 0 {
